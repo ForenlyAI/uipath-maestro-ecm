@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/forenly-ai-systems/uipath-maestro-ecm/blob/main/samples/artifacts/engineering_change_notice.schema.json",
+  "title": "EngineeringChangeNotice",
+  "description": "An ECN is created when an ECR is approved (Plan Change Implement). It carries the implementation plan, the effectivity, the supplier cascade, the CIB approval, the product-data release, and the audit trail through Change Implementation, Release, Supplier Change Implementation, and Quality Control.",
+  "type": "object",
+  "required": ["ecnId", "ecrId", "createdAt", "title", "releaseStatus"],
+  "additionalProperties": false,
+  "properties": {
+    "ecnId": {
+      "type": "string",
+      "description": "Stable identifier. Format: `ECN-{YYYYMMDD}-{seq}`.",
+      "pattern": "^ECN-[0-9]{8}-[0-9]{4,}$",
+      "examples": ["ECN-20260521-0001"]
+    },
+    "ecrId": {
+      "type": "string",
+      "description": "The approved ECR this ECN implements.",
+      "pattern": "^ECR-[0-9]{8}-[0-9]{4,}$"
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "title": { "type": "string", "minLength": 3, "maxLength": 200 },
+    "effectivity": {
+      "type": "string",
+      "format": "date",
+      "description": "Date the change formally takes effect (feeds manufacturing/ERP scheduling)."
+    },
+    "affectedItems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["itemId", "itemType"],
+        "additionalProperties": false,
+        "properties": {
+          "itemId": { "type": "string" },
+          "itemType": { "type": "string", "enum": ["part", "assembly", "bom-line", "configuration-item"] },
+          "supplierId": { "type": "string" },
+          "quantity": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "implementationPlan": {
+      "type": "array",
+      "description": "Tasks for the Product Development Organizations (design / manufacturing / packaging / publications) plus release.",
+      "items": {
+        "type": "object",
+        "required": ["task", "owner"],
+        "additionalProperties": false,
+        "properties": {
+          "task": { "type": "string", "examples": ["update design", "update planning", "update packaging & labels", "update publications"] },
+          "owner": { "type": "string", "enum": ["design-engineer", "manufacturing-engineer", "packaging", "publications", "change-specialist", "analyst"] },
+          "status": { "type": "string", "enum": ["pending", "in-progress", "done"], "default": "pending" }
+        }
+      }
+    },
+    "supplierActions": {
+      "type": "array",
+      "description": "Supplier cascade (Supplier Change Implementation): notify → accept → implement.",
+      "items": {
+        "type": "object",
+        "required": ["supplierId", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "supplierId": { "type": "string", "examples": ["sup-acme-001"] },
+          "channel": { "type": "string", "enum": ["api", "rpa", "edi", "email"], "description": "How the change is pushed to the supplier system." },
+          "status": { "type": "string", "enum": ["notified", "accepted", "rejected", "implemented"] },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "cibApproval": {
+      "type": "object",
+      "description": "Change Implementation Board sign-off on the implementation plan (HITL via Action Center).",
+      "additionalProperties": false,
+      "properties": {
+        "approved": { "type": "boolean" },
+        "approvedBy": { "type": "string" },
+        "approvedAt": { "type": "string", "format": "date-time" },
+        "aiAssisted": { "type": "boolean" }
+      }
+    },
+    "qualityControl": {
+      "type": "object",
+      "description": "Quality Administrator's physical verification + audit of the released change (final gate).",
+      "additionalProperties": false,
+      "properties": {
+        "verified": { "type": "boolean" },
+        "verifiedBy": { "type": "string" },
+        "verifiedAt": { "type": "string", "format": "date-time" },
+        "notes": { "type": "string", "maxLength": 1000 }
+      }
+    },
+    "releaseStatus": {
+      "type": "string",
+      "enum": ["planned", "in-implementation", "released", "closed"],
+      "description": "Release lifecycle: plan → implement → release product data → close the change item."
+    },
+    "auditTrail": {
+      "type": "array",
+      "description": "Immutable log entries appended at every gateway and task.",
+      "items": {
+        "type": "object",
+        "required": ["at", "event"],
+        "additionalProperties": false,
+        "properties": {
+          "at": { "type": "string", "format": "date-time" },
+          "by": { "type": "string" },
+          "event": { "type": "string", "examples": ["ecn-created", "cib-approved", "supplier-notified", "product-data-released", "qc-verified", "change-closed"] }
+        }
+      }
+    }
+  }
+}
