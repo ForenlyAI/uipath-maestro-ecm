@@ -13,28 +13,18 @@ and fallbacks possible (e.g. primary vision provider down → swap to a secondar
 
 ## Architecture diagram
 
-```
-                 ╔══════════════════════════════════════════╗
-                 ║   UiPath Maestro BPMN (CORE)             ║
-                 ║   ─────────────────────────────────       ║
-                 ║   • Process orchestration                 ║
-                 ║   • Agent Builder agents                  ║
-                 ║   • Action Center (HITL)                  ║
-                 ║   • Audit + governance layer              ║
-                 ╚══════════════════════════════════════════╝
-                           ↑ task nodes invoke ↓
-   ┌──────────────┬──────────────┬──────────────┬──────────────┐
-   │ Vision API   │ Robot/Sensor │ LLM Agent    │ Enterprise   │
-   │ (swappable)  │  Platform    │ (swappable)  │ Systems      │
-   │              │ (swappable)  │              │ (swappable)  │
-   ├──────────────┼──────────────┼──────────────┼──────────────┤
-   │ AOI vision   │ Mobile       │ Claude /     │ QA ticket    │
-   │ system       │ inspection   │ Gemini       │ CRM          │
-   │ — or —       │ robot        │ via          │ Audit log    │
-   │ mock vision  │ — or —       │ LangChain    │ Notification │
-   │ API          │ fixed camera │              │              │
-   └──────────────┴──────────────┴──────────────┴──────────────┘
-```
+### Core Orchestration: UiPath Maestro BPMN
+* **Process Orchestration** defining top-level flow (tasks, gateways, events, swimlanes).
+* **Agent Builder Agents** running classification, risk scoring, and decisions.
+* **Action Center (HITL)** for safety and compliance human reviews.
+* **Audit & Governance Layer** providing immutable logging at each node.
+
+### Swappable Integration Points
+
+| Vision API (Swappable) | Robot/Sensor Platform (Swappable) | LLM Agent (Swappable) | Enterprise Systems (Swappable) |
+| :--- | :--- | :--- | :--- |
+| • AOI Vision System<br>• Mock Vision API | • Mobile Inspection Robot<br>• Fixed Camera Feeds | • Claude via LangChain<br>• Gemini via LangChain | • QA Ticket System<br>• CRM Database<br>• Audit Log Services<br>• Notification Services |
+
 
 ## UiPath components used
 

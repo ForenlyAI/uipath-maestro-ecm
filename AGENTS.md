@@ -25,29 +25,27 @@ at the review-board gates via Action Center.
 
 ## Repository layout
 
-```
-uipath-maestro-ecm/
-├── README.md                                  # Project entry (humans start here)
-├── AGENTS.md                                  # THIS FILE (coding-agent bootstrap)
-├── LICENSE                                    # Apache 2.0
-├── CONTRIBUTING.md                            # Working agreement
-├── docs/
-│   ├── README.md                              # docs index
-│   └── ARCHITECTURE.md                        # UiPath-core BPMN architecture
-├── samples/triggers/                          # Canonical input data
-│   ├── incident_report.schema.json            # IncidentReport JSON schema
-│   ├── vision_aoi_defect.json
-│   ├── erp_deviation.json
-│   ├── manual_qa_report.json
-│   ├── supplier_deviation.json
-│   └── README.md
-└── artifacts/                                 # Generated UiPath artifacts (created during work)
-    └── container1/                            # Container 1 — Problem Report
-        ├── problem_report.bpmn                # Maestro BPMN export
-        ├── agent_analyst.yaml                 # Agent Builder definition
-        ├── action_center_irb.json            # Action Center task template
-        └── README.md
-```
+- **uipath-maestro-ecm/**: Root directory of the repository
+  - **README.md**: Project entry (humans start here)
+  - **AGENTS.md**: THIS FILE (coding-agent bootstrap)
+  - **LICENSE**: Apache 2.0
+  - **CONTRIBUTING.md**: Working agreement
+  - **docs/**: Documentation folder
+    - **README.md**: Documentation index
+    - **ARCHITECTURE.md**: UiPath-core BPMN architecture
+  - **samples/triggers/**: Canonical input data
+    - **incident_report.schema.json**: IncidentReport JSON schema
+    - **vision_aoi_defect.json**: Sample optical inspection input
+    - **erp_deviation.json**: Sample ERP deviation input
+    - **manual_qa_report.json**: Sample manual input
+    - **supplier_deviation.json**: Sample supplier variance input
+    - **README.md**: Overview of triggers
+  - **artifacts/**: Generated UiPath artifacts (created during work)
+    - **container1/**: Container 1 — Problem Report
+      - **problem_report.bpmn**: Maestro BPMN export
+      - **agent_analyst.yaml**: Agent Builder definition
+      - **action_center_irb.json**: Action Center task template
+      - **README.md**: Sub-container documentation
 
 ## How to work in this repo (instructions for coding agents)
 

@@ -16,27 +16,19 @@ In industrial fields (aerospace, manufacturing, energy, construction), physical 
 
 ## Architecture at a glance
 
-```
-                ╔══════════════════════════════════════════╗
-                ║   UiPath Maestro BPMN (core)             ║
-                ║   • 8 Robotics Containers as Subprocesses║
-                ║   • 9 Roles as Swimlanes / Agents        ║
-                ║   • Action Center HITL (board approvals) ║
-                ║   • Agentic Fast Track gateway           ║
-                ║   • Immutable audit compliance log       ║
-                ╚══════════════════════════════════════════╝
-                          ↑ task nodes invoke ↓
-   ┌──────────────┬──────────────┬──────────────┬──────────────┐
-   │ Trigger      │ LLM Agents   │ Enterprise / │ Execution    │
-   │ Source       │ (swappable)  │ Maintenance  │ Systems      │
-   │ (swappable)  │              │ (swappable)  │ (swappable)  │
-   ├──────────────┼──────────────┼──────────────┼──────────────┤
-   │ Mobile Robot │ Claude /     │ Mock AssetDB │ Repair Robot │
-   │ Fixed Sensor │ Gemini via   │ (ServiceNow /│ — or —       │
-   │ Operator App │ LangChain    │ Maximo-      │ RPA-driven   │
-   │ Cam Feed     │              │ shaped API)  │ Legacy UI    │
-   └──────────────┴──────────────┴──────────────┴──────────────┘
-```
+### Core Orchestration: UiPath Maestro BPMN
+* **8 Robotics Process Containers** modeled as BPMN subprocesses.
+* **9 Roles as Swimlanes / Agents** (such as Vision AI Analyst, Safety Risk Agent).
+* **Action Center HITL** for critical human-in-the-loop approvals.
+* **Agentic Fast Track Gateway** for automated, low-risk routing.
+* **Immutable Audit Compliance Log** for complete regulatory traceability.
+
+### Swappable Task Nodes Integration
+
+| Trigger Source (Swappable) | LLM Agents (Swappable) | Enterprise / Maintenance (Swappable) | Execution Systems (Swappable) |
+| :--- | :--- | :--- | :--- |
+| • Mobile Patrol Robot<br>• Fixed Sensor Feeds<br>• Operator Handheld App<br>• Camera Feeds | • Claude via LangChain<br>• Gemini via LangChain | • Mock Asset Database<br>(Maximo/ServiceNow-shaped API) | • Repair Robot (API)<br>• RPA-driven Legacy UI |
+
 
 Full architecture: [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
 
