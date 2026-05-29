@@ -85,6 +85,10 @@ PY
 
 See [`samples/triggers/`](./samples/triggers/) for the `IncidentReport` schema + 4 robotics source samples (vision / ERP / manual / supplier) that let you replay the flow without external systems.
 
+## Community
+
+Building this in the open — join the team chat on Discord: https://discord.gg/ntXbNbvN95
+
 ## Contributing
 
 Contributions are welcome — see [`CONTRIBUTING.md`](./CONTRIBUTING.md). Day-to-day discussion happens on the project **Discord**.
