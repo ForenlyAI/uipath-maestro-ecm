@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "id": "action-center-irb-review",
+  "title": "Incident Review Board - Task Template",
+  "description": "Schema establishing form fields, read-only AI analytics, and decision outcomes for human compliance reviews in UiPath Action Center.",
+  "type": "object",
+  "required": ["decision", "reviewerNotes", "reviewerName"],
+  "properties": {
+    "readOnlyContext": {
+      "type": "object",
+      "description": "Original incident context and AI recommendations shown to the reviewer.",
+      "required": ["incidentId", "subject", "aiCategory", "aiRiskScore", "aiConfidence", "aiReasoning"],
+      "additionalProperties": false,
+      "properties": {
+        "incidentId": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string"
+        },
+        "complianceClass": {
+          "type": "string"
+        },
+        "aiCategory": {
+          "type": "string",
+          "enum": ["STRUCTURAL_DEFECT", "WIRING_FAULT", "COMMODITY_VARIANCE", "OPERATIONAL_RISK"]
+        },
+        "aiRiskScore": {
+          "type": "number"
+        },
+        "aiConfidence": {
+          "type": "number"
+        },
+        "aiReasoning": {
+          "type": "string"
+        }
+      }
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["APPROVE_REWORK", "APPROVE_SCRAP", "INITIATE_AUDIT", "HOLD_PRODUCTION", "OVERRIDE_TO_PROCEED"],
+      "description": "The final Action Center disposition chosen by the human auditor."
+    },
+    "reviewerNotes": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Mandatory audit explanation justifying the human disposition or AI recommendation override."
+    },
+    "reviewerName": {
+      "type": "string",
+      "description": "E-signature of the authorized compliance auditor."
+    },
+    "cmiiChangeReqId": {
+      "type": "string",
+      "pattern": "^CR-[0-9]{4}-[0-9]{4,}$",
+      "description": "CMII Change Request ID generated if the decision requires formal board review."
+    }
+  }
+}

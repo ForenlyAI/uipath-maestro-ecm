@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uipath="http://uipath.com/schema/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="UiPath Maestro Modeler" exporterVersion="2026.1.0">
+  <bpmn:collaboration id="Collaboration_1">
+    <bpmn:participant id="Participant_Sentinel" name="Sentinel Enterprise - CMII Change & Anomaly Orchestration" processRef="Process_IncidentIntake" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_IncidentIntake" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_0">
+      <bpmn:lane id="Lane_Trigger" name="Anomaly Source / Integration Gate">
+        <bpmn:flowNodeRef>StartEvent_AnomalyDetected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_NormalizeIncident</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_VisionAI" name="Vision AI Analyst (Agent Builder)">
+        <bpmn:flowNodeRef>Task_AIAnalyzeClassify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_EvaluateRiskScore</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_RiskAndConfidence</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_HITL" name="Compliance Review Board (Action Center)">
+        <bpmn:flowNodeRef>Task_HITLComplianceReview</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Execution" name="Downstream Automation (RPA / CMMS)">
+        <bpmn:flowNodeRef>Task_AutoDispatchRemediation</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_LogCMMSAndAudit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_ProcessCompleted</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    
+    <!-- Flow Nodes -->
+    <bpmn:startEvent id="StartEvent_AnomalyDetected" name="Anomaly Trigger Received">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <bpmn:serviceTask id="Task_NormalizeIncident" name="Normalize to IncidentReport Schema" uipath:taskType="Adapter">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <bpmn:serviceTask id="Task_AIAnalyzeClassify" name="Run Vision AI Classification Agent" uipath:agentRef="agent_analyst.yaml">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <bpmn:serviceTask id="Task_EvaluateRiskScore" name="Assess Economic &amp; Compliance Risk (Re)" uipath:taskType="RiskAgent">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <bpmn:exclusiveGateway id="Gateway_RiskAndConfidence" name="Fast Track? (Risk &lt; Threshold AND Confidence &gt;= 0.7)">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_FastTrack</bpmn:outgoing>
+      <bpmn:outgoing>Flow_FullTrack</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <bpmn:userTask id="Task_HITLComplianceReview" name="Action Center HITL Review (CRB Sign-Off)" uipath:taskTemplate="action_center_irb.json">
+      <bpmn:incoming>Flow_FullTrack</bpmn:incoming>
+      <bpmn:outgoing>Flow_HITLCompleted</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <bpmn:serviceTask id="Task_AutoDispatchRemediation" name="Fast Track: Auto-Dispatch Robotic Repair" uipath:taskType="RobotDispatch">
+      <bpmn:incoming>Flow_FastTrack</bpmn:incoming>
+      <bpmn:outgoing>Flow_AutoCompleted</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <bpmn:serviceTask id="Task_LogCMMSAndAudit" name="Record CMMS Ticket &amp; Write Audit Log" uipath:taskType="CMMSIntegration">
+      <bpmn:incoming>Flow_HITLCompleted</bpmn:incoming>
+      <bpmn:incoming>Flow_AutoCompleted</bpmn:incoming>
+      <bpmn:outgoing>Flow_End</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <bpmn:endEvent id="EndEvent_ProcessCompleted" name="Remediation Dispatched &amp; Logged">
+      <bpmn:incoming>Flow_End</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequences -->
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_AnomalyDetected" targetRef="Task_NormalizeIncident" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_NormalizeIncident" targetRef="Task_AIAnalyzeClassify" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_AIAnalyzeClassify" targetRef="Task_EvaluateRiskScore" />
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_EvaluateRiskScore" targetRef="Gateway_RiskAndConfidence" />
+    <bpmn:sequenceFlow id="Flow_FastTrack" name="Yes (Auto)" sourceRef="Gateway_RiskAndConfidence" targetRef="Task_AutoDispatchRemediation">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${riskScore &lt; 0.15 &amp;&amp; analystConfidence &gt;= 0.70}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_FullTrack" name="No (HITL Required)" sourceRef="Gateway_RiskAndConfidence" targetRef="Task_HITLComplianceReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${riskScore &gt;= 0.15 || analystConfidence &lt; 0.70}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_HITLCompleted" sourceRef="Task_HITLComplianceReview" targetRef="Task_LogCMMSAndAudit" />
+    <bpmn:sequenceFlow id="Flow_AutoCompleted" sourceRef="Task_AutoDispatchRemediation" targetRef="Task_LogCMMSAndAudit" />
+    <bpmn:sequenceFlow id="Flow_End" sourceRef="Task_LogCMMSAndAudit" targetRef="EndEvent_ProcessCompleted" />
+  </bpmn:process>
+  
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
+      <bpmndi:BPMNParticipant id="Participant_Sentinel_di" bpmnElement="Participant_Sentinel" isHorizontal="true">
+        <dc:Bounds x="120" y="50" width="1120" height="520" />
+      </bpmndi:BPMNParticipant>
+      
+      <!-- Lanes -->
+      <bpmndi:BPMNLane id="Lane_Trigger_di" bpmnElement="Lane_Trigger" isHorizontal="true">
+        <dc:Bounds x="150" y="50" width="1090" height="130" />
+      </bpmndi:BPMNLane>
+      <bpmndi:BPMNLane id="Lane_VisionAI_di" bpmnElement="Lane_VisionAI" isHorizontal="true">
+        <dc:Bounds x="150" y="180" width="1090" height="140" />
+      </bpmndi:BPMNLane>
+      <bpmndi:BPMNLane id="Lane_HITL_di" bpmnElement="Lane_HITL" isHorizontal="true">
+        <dc:Bounds x="150" y="320" width="1090" height="120" />
+      </bpmndi:BPMNLane>
+      <bpmndi:BPMNLane id="Lane_Execution_di" bpmnElement="Lane_Execution" isHorizontal="true">
+        <dc:Bounds x="150" y="440" width="1090" height="130" />
+      </bpmndi:BPMNLane>
+      
+      <!-- Start Event -->
+      <bpmndi:BPMNShape id="StartEvent_AnomalyDetected_di" bpmnElement="StartEvent_AnomalyDetected">
+        <dc:Bounds x="182" y="92" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="160" y="135" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Normalize Task -->
+      <bpmndi:BPMNShape id="Task_NormalizeIncident_di" bpmnElement="Task_NormalizeIncident">
+        <dc:Bounds x="270" y="70" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- AI Classify Task -->
+      <bpmndi:BPMNShape id="Task_AIAnalyzeClassify_di" bpmnElement="Task_AIAnalyzeClassify">
+        <dc:Bounds x="270" y="210" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Evaluate Risk Task -->
+      <bpmndi:BPMNShape id="Task_EvaluateRiskScore_di" bpmnElement="Task_EvaluateRiskScore">
+        <dc:Bounds x="440" y="210" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Gateway -->
+      <bpmndi:BPMNShape id="Gateway_RiskAndConfidence_di" bpmnElement="Gateway_RiskAndConfidence" isMarkerVisible="true">
+        <dc:Bounds x="615" y="225" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="599" y="180" width="82" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Action Center user task -->
+      <bpmndi:BPMNShape id="Task_HITLComplianceReview_di" bpmnElement="Task_HITLComplianceReview">
+        <dc:Bounds x="730" y="340" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Fast Track robot task -->
+      <bpmndi:BPMNShape id="Task_AutoDispatchRemediation_di" bpmnElement="Task_AutoDispatchRemediation">
+        <dc:Bounds x="730" y="465" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Record CMMS and write Audit Log -->
+      <bpmndi:BPMNShape id="Task_LogCMMSAndAudit_di" bpmnElement="Task_LogCMMSAndAudit">
+        <dc:Bounds x="920" y="465" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- End Event -->
+      <bpmndi:BPMNShape id="EndEvent_ProcessCompleted_di" bpmnElement="EndEvent_ProcessCompleted">
+        <dc:Bounds x="1112" y="487" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1097" y="530" width="67" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="218" y="110" />
+        <di:waypoint x="270" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="330" y="150" />
+        <di:waypoint x="330" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="390" y="250" />
+        <di:waypoint x="440" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="560" y="250" />
+        <di:waypoint x="615" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_FastTrack_di" bpmnElement="Flow_FastTrack">
+        <di:waypoint x="640" y="275" />
+        <di:waypoint x="640" y="505" />
+        <di:waypoint x="730" y="505" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="654" y="483" width="51" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_FullTrack_di" bpmnElement="Flow_FullTrack">
+        <di:waypoint x="665" y="250" />
+        <di:waypoint x="690" y="250" />
+        <di:waypoint x="690" y="380" />
+        <di:waypoint x="730" y="380" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="686" y="346" width="48" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_HITLCompleted_di" bpmnElement="Flow_HITLCompleted">
+        <di:waypoint x="850" y="380" />
+        <di:waypoint x="885" y="380" />
+        <di:waypoint x="885" y="490" />
+        <di:waypoint x="920" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AutoCompleted_di" bpmnElement="Flow_AutoCompleted">
+        <di:waypoint x="850" y="505" />
+        <di:waypoint x="920" y="505" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_End_di" bpmnElement="Flow_End">
+        <di:waypoint x="1040" y="505" />
+        <di:waypoint x="1112" y="505" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
