@@ -1,0 +1,6 @@
+{
+  "ProjectType": "ProcessOrchestration",
+  "Name": "FieldIncidentTriage",
+  "Description": "Physical AI field-inspection incident triage — Change Trigger lane (Maestro BPMN).",
+  "MainFile": null
+}
