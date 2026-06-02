@@ -1,0 +1,30 @@
+{
+  "$schema": "https://cloud.uipath.com/draft/2024-12/entry-point",
+  "$id": "entry-points.json",
+  "entryPoints": [
+    {
+      "filePath": "/content/FieldIncidentTriage.bpmn#Event_start",
+      "uniqueId": "a1b2c3d4-0001-4a00-8000-000000000001",
+      "type": "processorchestration",
+      "input": {
+        "type": "object",
+        "properties": {
+          "Incident": {
+            "type": "object",
+            "properties": {
+              "incidentId": { "type": "string" },
+              "category": { "type": "string" },
+              "riskScore": { "type": "number" },
+              "confidence": { "type": "number" },
+              "hitlRequired": { "type": "boolean" },
+              "suggestedAction": { "type": "string" },
+              "route": { "type": "string" }
+            }
+          }
+        },
+        "required": []
+      },
+      "output": { "type": "object", "properties": {} }
+    }
+  ]
+}
