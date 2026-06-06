@@ -1,0 +1,18 @@
+{
+  "incidentId": "IR-20260606-0001",
+  "source": {
+    "type": "manual",
+    "name": "handheld-operator-app",
+    "detectorConfidence": 1.0
+  },
+  "occurredAt": "2026-06-06T10:15:00Z",
+  "severity": "medium",
+  "subject": "Hydraulic leak observed in maintenance bay 3",
+  "description": "Operator manually reported visible hydraulic fluid leakage near actuator joint during inspection round.",
+  "reportedBy": {
+    "principalType": "human",
+    "principalId": "op-042",
+    "displayName": "Field Operator"
+  },
+  "tags": ["hydraulic", "leak", "maintenance-bay-3"]
+}
