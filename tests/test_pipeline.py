@@ -23,7 +23,7 @@ HIGH_RISK = {
 
 LOW_RISK = {
     "incidentId": "IR-TEST-LOW",
-    "source": {"type": "operator", "detectorConfidence": 0.99},
+    "source": {"type": "manual", "detectorConfidence": 0.99},
     "severity": "low",
     "subject": "Routine operational note",
     "description": "minor cosmetic scuff, no functional impact",
@@ -53,12 +53,17 @@ def test_gateway_is_authoritative_over_model_output():
 def test_pipeline_end_to_end_and_audit_trail():
     results = run_pipeline.main([])  # all sample triggers
     assert len(results) >= 1
+
     for r in results:
         assert r["route"] in ("ACTION_CENTER", "AUTONOMOUS")
         assert r["ticket"].startswith("QA-")
+
     # Every processed incident leaves an immutable audit trail.
     audit = store.read_audit()
+
     assert any(e["stage"] == "INTAKE" for e in audit)
+    assert any(e["stage"] == "ANALYSIS" for e in audit)
+    assert any(e["stage"] == "GATEWAY" for e in audit)
     assert any(e["stage"] == "ACTION" for e in audit)
 
 
