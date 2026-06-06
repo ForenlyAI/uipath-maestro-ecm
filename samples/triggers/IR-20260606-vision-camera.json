@@ -1,0 +1,21 @@
+{
+  "incidentId": "IR-20260606-0002",
+  "source": {
+    "type": "vision",
+    "name": "fixed-camera-feed-line-2",
+    "detectorConfidence": 0.92
+  },
+  "occurredAt": "2026-06-06T10:20:00Z",
+  "severity": "high",
+  "subject": "Unauthorized heat signature detected near control panel",
+  "description": "Thermal camera detected abnormal heat pattern near electrical control panel suggesting possible overload risk.",
+  "reportedBy": {
+    "principalType": "automated-detector",
+    "principalId": "thermal-cam-02"
+  },
+  "tags": [
+    "thermal",
+    "electrical",
+    "risk-zone"
+  ]
+}

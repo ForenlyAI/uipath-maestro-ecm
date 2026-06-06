@@ -1,0 +1,21 @@
+{
+  "incidentId": "IR-20260606-0003",
+  "source": {
+    "type": "vision",
+    "name": "iot-vibration-sensor-cluster",
+    "detectorConfidence": 0.87
+  },
+  "occurredAt": "2026-06-06T10:25:00Z",
+  "severity": "critical",
+  "subject": "Abnormal vibration pattern detected in turbine unit",
+  "description": "IoT vibration sensor reports sustained oscillation beyond safe threshold in turbine assembly, indicating potential mechanical failure.",
+  "reportedBy": {
+    "principalType": "automated-detector",
+    "principalId": "vibration-sensor-grid-7"
+  },
+  "tags": [
+    "vibration",
+    "turbine",
+    "critical"
+  ]
+}
