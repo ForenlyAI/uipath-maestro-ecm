@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""End-to-end local orchestration of the field-inspection BPMN flow.
+"""End-to-end local orchestration of the mower-fleet incident BPMN flow.
 
 This is the runnable proof that the orchestration actually runs (see
 docs/ARCHITECTURE.md — "the orchestration is meant to actually run"). It chains the
 same stages the UiPath Maestro BPMN models, as plain Python task nodes:
 
     trigger (IncidentReport)
-      -> Vision AI Analyst agent      (classify + Safety Risk score)
+      -> Fleet AI Analyst agent      (classify + Safety Risk score)
       -> Agentic Fast-Track gateway   (HITL required?  -> Action Center : autonomous)
       -> Action stage                 (open QA ticket via mock enterprise API)
       -> Immutable audit log
@@ -32,16 +32,16 @@ def process(incident):
     print(f"\n=== {iid} :: {incident.get('subject', '')[:64]}")
     _audit(iid, "INTAKE", "orchestrator", f"severity={incident.get('severity')}")
 
-    # Stage 1-3: Vision AI Analyst (classification + Safety Risk Agent)
+    # Stage 1-3: Fleet AI Analyst (classification + Safety Risk Agent)
     disp, provider = analyze(incident)
     print(f"  analyst [{provider}] -> {disp['category']} "
           f"risk={disp['riskScore']} conf={disp['confidence']} action={disp['suggestedAction']}")
-    _audit(iid, "ANALYSIS", "vision-ai-analyst",
+    _audit(iid, "ANALYSIS", "fleet-ai-analyst",
            f"{disp['category']} risk={disp['riskScore']} action={disp['suggestedAction']}")
 
     # Stage: Agentic Fast-Track gateway
     if disp["hitlRequired"]:
-        print("  gateway -> HITL: routed to Compliance Review Board (Action Center)")
+        print("  gateway -> HITL: routed to Fleet Review Board (Action Center)")
         _audit(iid, "GATEWAY", "fast-track-gateway", "HITL required -> Action Center")
         route = "ACTION_CENTER"
     else:

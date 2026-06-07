@@ -1,14 +1,14 @@
 # Maestro process — `FieldIncidentTriage`
 
-A UiPath Maestro (BPMN 2.0) process for the **Change Trigger** lane of the
-field-inspection incident lifecycle. It is the live, drawable counterpart of
-`run_pipeline.py`'s triage stage: an incident is captured, scored by the Vision
+A UiPath Maestro (BPMN 2.0) process for the **incident-intake** lane of the
+robotic lawn-mower fleet incident lifecycle. It is the live, drawable counterpart of
+`run_pipeline.py`'s triage stage: an incident is captured, scored by the Fleet
 AI Analyst, reviewed, then routed — high-risk / low-confidence cases escalate to
-the **Incident Review Board via Action Center (HITL)**; the rest take the
+the **Fleet Review Board via Action Center (HITL)**; the rest take the
 **Fast-Track autonomous** path.
 
 ```
-Field Incident Captured              (e.g. Solomon SolVision defect FAIL)
+Mower Incident Captured              (e.g. onboard-vision blade-strike)
   → AI Triage & Risk Score           (service — agents/analyst_agent.py)
   → Reproduce Incident
   → Analyze Root Cause
@@ -23,10 +23,10 @@ Field Incident Captured              (e.g. Solomon SolVision defect FAIL)
 
 Routing rule: `hitlRequired = analyst-flagged OR economicImpactScore ≥ 0.40 OR
 safetyCritical OR orgScope = FLEET_WIDE`. A costly / safety-critical / fleet-wide
-defect escalates to a human review board; a cheap, contained one auto-resolves.
+fault escalates to the Fleet Review Board; a cheap, contained one auto-resolves.
 
-This is the Physical AI framing of Figure 12 (CM II Based ECM), Change Trigger
-swimlane. Source figure: `docs/figure12-source/`.
+Adapted from the generic change-trigger pattern (Figure 12, see
+`docs/figure12-source/`) into robotic lawn-mower fleet incident intake.
 
 ## Files
 

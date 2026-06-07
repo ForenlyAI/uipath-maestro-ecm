@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "id": "action-center-irb-review",
-  "title": "Incident Review Board - Task Template",
-  "description": "Schema establishing form fields, read-only AI analytics, and decision outcomes for human compliance reviews in UiPath Action Center.",
+  "title": "Fleet Review Board - Task Template",
+  "description": "Schema establishing form fields, read-only AI analytics, and decision outcomes for human reviews of robotic lawn-mower fleet incidents in UiPath Action Center.",
   "type": "object",
   "required": ["decision", "reviewerNotes", "reviewerName"],
   "properties": {
@@ -24,12 +24,12 @@
         "severity": {
           "type": "string"
         },
-        "complianceClass": {
+        "safetyZone": {
           "type": "string"
         },
         "aiCategory": {
           "type": "string",
-          "enum": ["STRUCTURAL_DEFECT", "WIRING_FAULT", "COMMODITY_VARIANCE", "OPERATIONAL_RISK"]
+          "enum": ["BLADE_FAULT", "MOBILITY_FAULT", "BOUNDARY_BREACH", "OPERATIONAL_RISK"]
         },
         "aiRiskScore": {
           "type": "number"
@@ -44,8 +44,8 @@
     },
     "decision": {
       "type": "string",
-      "enum": ["APPROVE_REWORK", "APPROVE_SCRAP", "INITIATE_AUDIT", "HOLD_PRODUCTION", "OVERRIDE_TO_PROCEED"],
-      "description": "The final Action Center disposition chosen by the human auditor."
+      "enum": ["APPROVE_SERVICE", "RECALL_UNIT", "INITIATE_INSPECTION", "HOLD_UNIT", "OVERRIDE_TO_PROCEED"],
+      "description": "The final Action Center disposition chosen by the human reviewer."
     },
     "reviewerNotes": {
       "type": "string",
@@ -54,12 +54,12 @@
     },
     "reviewerName": {
       "type": "string",
-      "description": "E-signature of the authorized compliance auditor."
+      "description": "E-signature of the authorized fleet reviewer."
     },
-    "cmiiChangeReqId": {
+    "workOrderId": {
       "type": "string",
-      "pattern": "^CR-[0-9]{4}-[0-9]{4,}$",
-      "description": "CMII Change Request ID generated if the decision requires formal board review."
+      "pattern": "^WO-[0-9]{4}-[0-9]{4,}$",
+      "description": "Remediation Work Order ID generated when the decision requires a field service action."
     }
   }
 }

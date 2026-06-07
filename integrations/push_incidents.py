@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Push the sample IncidentReports into a live Orchestrator queue.
 
-Each trigger is run through the Vision AI Analyst, then enqueued with its triage
+Each trigger is run through the Fleet AI Analyst, then enqueued with its triage
 (category / riskScore / confidence / hitlRequired / route) as SpecificContent.
 A Maestro/Studio process dequeues these and routes them — HITL items (high risk
 or low confidence) to the Action Center, the rest to autonomous Fast Track.

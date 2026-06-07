@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="FieldIncidentTriage-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="forenly/uipath-maestro-ecm" exporterVersion="1.1">
   <bpmn:process id="Process_FieldIncidentTriage" name="Field Incident Triage" isExecutable="false">
-    <bpmn:documentation>Physical AI field-inspection incident triage. A robot-fleet vision system (e.g. Solomon SolVision) detects a defect; the incident is dequeued from the IncidentReports queue, triaged by the Vision AI Analyst (category / riskScore / confidence), then run through Impact Analysis which estimates the economic (repair + downtime + inaction risk) and organizational (roles engaged / scope / safety) impact. The routing gateway escalates costly, safety-critical, or fleet-wide defects to the Incident Review Board via Action Center (HITL); the rest are auto-resolved on the Fast Track.</bpmn:documentation>
+    <bpmn:documentation>Robotic lawn-mower fleet incident triage. An onboard vision/sensor or fleet telemetry source detects a fault; the incident is dequeued from the IncidentReports queue, triaged by the Fleet AI Analyst (category / riskScore / confidence), then run through Impact Analysis which estimates the economic (repair + downtime + inaction risk) and organizational (roles engaged / scope / safety) impact. The routing gateway escalates costly, safety-critical, or fleet-wide faults to the Fleet Review Board via Action Center (HITL); the rest are auto-resolved on the Fast Track.</bpmn:documentation>
     <bpmn:extensionElements>
       <uipath:variables version="v1">
         <uipath:input id="vIncident" name="Incident" type="jsonSchema" elementId="Event_start" default="{&#34;incidentId&#34;:&#34;&#34;,&#34;category&#34;:&#34;&#34;,&#34;riskScore&#34;:0,&#34;confidence&#34;:0,&#34;hitlRequired&#34;:false,&#34;suggestedAction&#34;:&#34;&#34;,&#34;route&#34;:&#34;&#34;,&#34;economicImpactScore&#34;:0,&#34;estimatedCostUsd&#34;:0,&#34;orgScope&#34;:&#34;&#34;,&#34;safetyCritical&#34;:false}"><![CDATA[{"type":"object","$schema":"http://json-schema.org/draft-07/schema#","properties":{"incidentId":{"type":"string"},"category":{"type":"string"},"riskScore":{"type":"number"},"confidence":{"type":"number"},"hitlRequired":{"type":"boolean"},"suggestedAction":{"type":"string"},"route":{"type":"string"},"economicImpactScore":{"type":"number"},"estimatedCostUsd":{"type":"number"},"orgScope":{"type":"string"},"safetyCritical":{"type":"boolean"}}}]]></uipath:input>
@@ -21,7 +21,7 @@
     </bpmn:startEvent>
 
     <bpmn:serviceTask id="Activity_triage" name="AI Triage and Risk Score">
-      <bpmn:documentation>Role: AI Analyst. Vision AI Analyst scores the incident (category / riskScore / confidence) and sets hitlRequired. Maps to run_pipeline.py analyst stage.</bpmn:documentation>
+      <bpmn:documentation>Role: AI Analyst. Fleet AI Analyst scores the incident (category / riskScore / confidence) and sets hitlRequired. Maps to run_pipeline.py analyst stage.</bpmn:documentation>
       <bpmn:incoming>edge_start-triage</bpmn:incoming>
       <bpmn:outgoing>edge_triage-reproduce</bpmn:outgoing>
     </bpmn:serviceTask>

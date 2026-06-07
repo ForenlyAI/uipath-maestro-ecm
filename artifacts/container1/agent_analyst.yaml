@@ -1,9 +1,9 @@
-# UiPath Agent Builder Configuration — Vision AI Analyst Agent
+# UiPath Agent Builder Configuration — Fleet AI Analyst Agent
 agent:
-  id: "vision-ai-analyst"
-  name: "Vision AI Analyst Agent"
+  id: "fleet-ai-analyst"
+  name: "Fleet AI Analyst Agent"
   version: "1.0.0"
-  description: "Autonomous agent for classifying anomalous field inspection incident reports and assessing regulatory/economic impact."
+  description: "Autonomous agent for classifying robotic lawn-mower fleet incident reports and assessing safety/economic impact."
   model:
     provider: "anthropic"
     name: "claude-3-5-sonnet-v2"
@@ -12,20 +12,22 @@ agent:
 
 playbook:
   system_prompt: |
-    You are the Sentinel Core Vision AI Analyst, an autonomous engine running inside UiPath Agent Builder.
-    Your objective is to ingest normalized `IncidentReport` objects, analyze the attached telemetry/optical reports, classify the anomaly, and output a structured decision payload.
+    You are the Fleet AI Analyst, an autonomous engine running inside UiPath Agent Builder.
+    Your objective is to ingest normalized `IncidentReport` objects from a robotic lawn-mower
+    fleet, analyze the attached telemetry/optical evidence, classify the fault, and output a
+    structured decision payload.
 
     CRITICAL RULES FOR DECISION MAKING:
-    1. CONSTRAINED CATEGORIZATION: Map every anomaly to one of: `STRUCTURAL_DEFECT`, `WIRING_FAULT`, `COMMODITY_VARIANCE`, `OPERATIONAL_RISK`.
-    2. SAFETY RISK INDEX (Re) CALCULATION:
-       - Baseline Re = 0.05
+    1. CONSTRAINED CATEGORIZATION: Map every fault to one of: `BLADE_FAULT`, `MOBILITY_FAULT`, `BOUNDARY_BREACH`, `OPERATIONAL_RISK`.
+    2. SAFETY RISK SCORE CALCULATION:
+       - Baseline risk = 0.05
        - If `severity` is "critical", add 0.50. If "high", add 0.25. If "medium", add 0.10.
-       - If `complianceClass` is AS9100 or ISO13485 (highly regulated aerospace/medical), multiply risk score by 1.5.
+       - If `safetyZone` is a safety-critical zone (near-road, near-water, public-access, steep-slope), multiply risk score by 1.5.
        - If `detectorConfidence` < 0.8, increase risk by 0.15 (handling sensor uncertainty).
     3. HUMAN-IN-THE-LOOP (HITL) GATEWAY TRIGGER:
        - You must output an execution 'confidence' score (0.0 to 1.0).
        - If your confidence in the classification is < 0.70 OR if the calculated `riskScore` >= 0.15, flag `hitlRequired: true`.
-       - This will force UiPath Maestro to routing to the Compliance Review Board (Action Center).
+       - This forces UiPath Maestro to route to the Fleet Review Board (Action Center).
     4. NO SECRET RETENTION: Do not log or echo tenant URLs or credential details.
 
   inputs:
@@ -44,7 +46,7 @@ playbook:
           type: "string"
         category:
           type: "string"
-          enum: ["STRUCTURAL_DEFECT", "WIRING_FAULT", "COMMODITY_VARIANCE", "OPERATIONAL_RISK"]
+          enum: ["BLADE_FAULT", "MOBILITY_FAULT", "BOUNDARY_BREACH", "OPERATIONAL_RISK"]
         riskScore:
           type: "number"
           minimum: 0
@@ -60,29 +62,29 @@ playbook:
           description: "Step-by-step cognitive deduction details."
         suggestedAction:
           type: "string"
-          enum: ["REWORK", "SCRAP", "AUDIT", "HOLD", "PROCEED"]
+          enum: ["SERVICE", "RECALL", "INSPECT", "HOLD", "PROCEED"]
 
 examples:
   - input:
       incident:
-        incidentId: "IR-20260520-0001"
+        incidentId: "IR-20260607-0001"
         source:
           type: "vision"
-          name: "aoi-vision"
-          detectorConfidence: 0.95
-        occurredAt: "2026-05-29T12:00:00Z"
-        severity: "medium"
-        subject: "NG_WIRING: misrouted cable, panel A-12"
-        description: "Laser scanning indicates cable branch 7 is routed outside the designated channel by 12mm, breaching spacing specification."
+          name: "onboard-cam"
+          detectorConfidence: 0.91
+        occurredAt: "2026-06-07T08:14:10Z"
+        severity: "high"
+        subject: "BLADE_STRIKE: cutting deck struck a foreign object on a roadside verge, unit MOW-NX3-07"
+        description: "Onboard vision flagged a hard blade strike against a foreign object on a near-road verge. Blade RPM dropped then spiked; deck vibration over threshold."
         affectedItems:
-          - itemId: "BOM-A12.cable.7"
-            itemType: "bom-line"
-        complianceClass: "iso10007"
+          - itemId: "MOW-NX3-07"
+            itemType: "unit"
+        safetyZone: "near-road"
     output:
-      incidentId: "IR-20260520-0001"
-      category: "WIRING_FAULT"
-      riskScore: 0.15
+      incidentId: "IR-20260607-0001"
+      category: "BLADE_FAULT"
+      riskScore: 0.45
       confidence: 0.92
       hitlRequired: true
-      reasoning: "Classification is highly confident (0.92) as a WIRING_FAULT due to laser scan telemetry. Risk is scored at 0.15 (base 0.05 + 0.10 medium severity), reaching the HITL threshold. Manual verification is required to authorize rework of branch 7 on panel A-12."
-      suggestedAction: "REWORK"
+      reasoning: "Classified as BLADE_FAULT with high confidence from onboard vision telemetry. Risk 0.45 (base 0.05 + 0.25 high severity, x1.5 for near-road safety zone), well over the HITL threshold. The unit operated next to a road, so a human must authorize service before the mower resumes."
+      suggestedAction: "SERVICE"
