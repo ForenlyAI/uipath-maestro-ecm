@@ -98,6 +98,7 @@ Each incident is classified by the **Fleet AI Analyst** agent ([`agents/`](./age
 - **LLM task node** — set `ANTHROPIC_API_KEY` (Claude, primary) or `GEMINI_API_KEY` (fallback) and `pip install -r requirements.txt`. With no key, a deterministic rule layer mirrors the BPMN gateway math so the pipeline still runs.
 - **Mock enterprise API** — `uvicorn mocks.enterprise_api:app --port 8099` for live HTTP endpoints (QA tickets / CRM / audit log).
 - **Live UiPath queue** — see [`docs/UIPATH-SETUP.md`](./docs/UIPATH-SETUP.md) to push incidents into a real `IncidentReports` queue on Orchestrator.
+- **Deploy to Maestro Cloud (submission-critical)** — [`docs/DEPLOY-MAESTRO.md`](./docs/DEPLOY-MAESTRO.md) is the step-by-step runbook to make the BPMN actually *run on UiPath Automation Cloud* (the AgentHack requirement) + a done-checklist.
 
 ## Community
 

@@ -9,7 +9,7 @@
       </uipath:variables>
     </bpmn:extensionElements>
 
-    <bpmn:startEvent id="Event_start" name="Field Incident Captured">
+    <bpmn:startEvent id="Event_start" name="Mower Incident Captured">
       <bpmn:extensionElements>
         <uipath:entryPointId value="a1b2c3d4-0001-4a00-8000-000000000001" />
         <uipath:mapping version="v1">
