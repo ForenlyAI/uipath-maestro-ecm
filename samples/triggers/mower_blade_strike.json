@@ -1,0 +1,18 @@
+{
+  "incidentId": "IR-20260607-0001",
+  "source": { "type": "vision", "name": "onboard-cam", "detectorConfidence": 0.91 },
+  "occurredAt": "2026-06-07T08:14:10Z",
+  "severity": "high",
+  "subject": "BLADE_STRIKE: cutting deck struck a foreign object on a roadside verge, unit MOW-NX3-07",
+  "description": "Onboard vision flagged a hard blade strike against a foreign object (suspected metal debris) on a roadside verge. Blade RPM dropped then spiked; deck vibration over threshold. Unit was mowing a near-road verge on route 12.",
+  "affectedItems": [
+    { "itemId": "MOW-NX3-07", "itemType": "unit", "quantity": 1 },
+    { "itemId": "BLADE-DECK-21", "itemType": "module", "supplierId": "sup-blades-acme-001", "quantity": 1 }
+  ],
+  "safetyZone": "near-road",
+  "evidence": [
+    { "kind": "image", "uri": "s3://fleet-evidence/2026-06-07/IR-20260607-0001/strike.jpg", "caption": "Onboard capture — deck contact with debris" }
+  ],
+  "reportedBy": { "principalType": "automated-detector", "principalId": "onboard-cam-MOW07", "displayName": "Onboard Vision @ MOW-NX3-07" },
+  "tags": ["blade", "strike", "near-road", "route-12"]
+}

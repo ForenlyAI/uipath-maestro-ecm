@@ -1,0 +1,17 @@
+{
+  "incidentId": "IR-20260607-0005",
+  "source": { "type": "telemetry", "name": "navimow-fleet", "detectorConfidence": 0.84 },
+  "occurredAt": "2026-06-07T03:48:12Z",
+  "severity": "medium",
+  "subject": "Anti-theft: unit moved off-site during non-operating hours in a public-access area",
+  "description": "Fleet anti-theft flagged location change of the unit away from the registered site at 03:48 local, outside operating hours, in a public-access area. PIN lock engaged; drive lock applied. Possible theft or unauthorized relocation.",
+  "affectedItems": [
+    { "itemId": "MOW-NX3-09", "itemType": "unit", "quantity": 1 }
+  ],
+  "safetyZone": "public-access",
+  "evidence": [
+    { "kind": "log", "uri": "s3://fleet-evidence/2026-06-07/IR-20260607-0005/gps-move.json", "caption": "Off-hours GPS movement track" }
+  ],
+  "reportedBy": { "principalType": "service-account", "principalId": "navimow-fleet-webhook", "displayName": "NavimowFleet anti-theft" },
+  "tags": ["theft", "gps", "public-access", "after-hours"]
+}

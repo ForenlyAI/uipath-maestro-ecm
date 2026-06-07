@@ -1,72 +1,60 @@
-# Architecture — UiPath-Core, Vendor-Agnostic BPMN Orchestration
+# Architecture — UiPath-Core, Vendor-Agnostic Fleet Orchestration
 
-> **Design principle:** UiPath Maestro BPMN is the orchestration core. Vision providers, robot
-> platforms, LLMs, and enterprise systems are **swappable task nodes** invoked by the BPMN flow.
-> The use case is illustrative; the orchestration layer is the product.
+> **Design principle:** UiPath Maestro BPMN is the orchestration core for a robotic
+> lawn-mower fleet. Mower platforms, vision/sensor providers, LLMs, and back-office systems
+> are **swappable task nodes** invoked by the BPMN flow. The two UiPath pillars carry the
+> work: **Agent Builder** (agentic decisioning) and the **RPA Robot** (executing into
+> systems without clean APIs).
 
 ## Why vendor-agnostic
 
 A vendor-agnostic orchestration core is the difference between a drop-in adoption path and a
-rip-and-replace pitch. Customers keep their existing vision/robot/PLM vendors; the BPMN orchestration
-sits on top. Each task node has a defined interface, which is what makes exception handling, retries,
-and fallbacks possible (e.g. primary vision provider down → swap to a secondary or a mock).
+rip-and-replace pitch. A fleet operator keeps their existing mower brand, vision stack, and
+back-office systems; the BPMN orchestration sits on top. Each task node has a defined
+interface, which is what makes exception handling, retries, and fallbacks possible (e.g.
+primary telemetry source down → swap to a secondary or a mock).
 
-## Architecture diagram
+## The two UiPath pillars
 
-### Core Orchestration: UiPath Maestro BPMN
-* **Process Orchestration** defining top-level flow (tasks, gateways, events, swimlanes).
-* **Agent Builder Agents** running classification, risk scoring, and decisions.
-* **Action Center (HITL)** for safety and compliance human reviews.
-* **Audit & Governance Layer** providing immutable logging at each node.
+| Pillar | UiPath component | What it does here |
+|---|---|---|
+| **Agentic** | **Agent Builder** | Fleet AI Analyst (classify + risk), Safety Risk Agent (Fast-Track gateway), Impact Agent (economic/org impact), compliance-summary agent — each a Maestro-callable agent that *reasons and decides*. |
+| **RPA** | **RPA Robot** + API Workflows | Executes approved remediation into the dealer/warranty portal, parts ERP, and legacy fleet CMMS — driven through the UI where there is no API, via API Workflows where there is. |
+| **Governance** | **Action Center** | Human-in-the-loop approval for safety/cost gates; supervisor sign-off. |
+| **Backbone** | **Maestro BPMN** | Top-level process (BPMN 2.0): tasks, gateways, events, swimlanes; immutable audit at each node. |
 
-### Swappable Integration Points
+## Swappable integration points
 
-| Vision API (Swappable) | Robot/Sensor Platform (Swappable) | LLM Agent (Swappable) | Enterprise Systems (Swappable) |
+| Trigger source (swappable) | Mower platform (swappable) | LLM agent (swappable) | Back-office systems (swappable) |
 | :--- | :--- | :--- | :--- |
-| • AOI Vision System<br>• Mock Vision API | • Mobile Inspection Robot<br>• Fixed Camera Feeds | • Claude via LangChain<br>• Gemini via LangChain | • QA Ticket System<br>• CRM Database<br>• Audit Log Services<br>• Notification Services |
+| • Onboard vision<br>• IMU / lidar sensor<br>• Fleet telemetry<br>• Operator handheld | • Segway Navimow X3<br>• Husqvarna<br>• Mock fleet API | • Claude via LangChain<br>• Gemini via LangChain | • Warranty/dealer portal (**RPA**)<br>• Parts ERP<br>• Fleet CMMS<br>• Audit log / notifications |
 
+## Reference flow (BPMN tasks)
 
-## UiPath components used
+A robotic mower flags a fault; the BPMN orchestrates triage and approved remediation:
 
-| Component | Role in the BPMN |
-|---|---|
-| **Maestro BPMN** | Top-level process definition (BPMN 2.0): tasks, gateways, events, lanes |
-| **Agent Builder** | Classification Agent, Risk Agent, Decision Agent — each encapsulated as a Maestro-callable agent |
-| **API Workflows** | Outbound calls to vendor task nodes (vision, robot platform, enterprise systems) |
-| **Action Center** | Human-in-the-loop approval for high-risk decisions; supervisor sign-off |
-| **RPA Robot** | Optional system-of-record updates that lack APIs |
+1. **Incident Intake** — onboard vision/sensor/telemetry/handheld raises a fault (type, location, severity, evidence) → canonical `IncidentReport`.
+2. **Fleet AI Analyst (agent)** — categorize the fault (BLADE_FAULT / MOBILITY_FAULT / BOUNDARY_BREACH / OPERATIONAL_RISK).
+3. **Safety Risk Agent (agent)** — risk score; safety-critical operating zones (near-road, near-water, public-access, steep-slope) bias toward HITL.
+4. **Impact Agent (agent)** — economic + organizational impact → Fast Track (autonomous) or Fleet Review Board.
+5. **Fleet Review Board (HITL)** — Action Center approval for high-risk / high-cost actions.
+6. **Dispatch Remediation** — send a field technician or repair action; HOLD/RECALL the unit if unsafe.
+7. **Legacy Write-back (RPA)** — the RPA Robot records the action in the warranty portal / parts ERP / fleet CMMS.
+8. **Quality Assurance** — compliance-summary agent + immutable audit entry + supervisor sign-off.
 
-## Reference demo use case (illustrative)
-
-A reference use case grounds the demo. **The use case can change without redesigning the BPMN** —
-that is the point.
-
-**Working candidate:** field quality control on an industrial installation site (e.g. an electrical
-installation). A mobile platform patrols, the vision system flags defects, and the BPMN orchestrates
-remediation with HITL where needed.
-
-Flow stages (BPMN tasks):
-1. **Inspection Intake** — the vision system flags a candidate defect (type, location, severity, image).
-2. **Classification Agent** — categorize the defect (product / line / severity tier).
-3. **Risk Agent** — risk score; route severe cases to HITL.
-4. **Decision Agent** — choose remediation: rework / scrap / alert / halt / continue.
-5. **Compliance Reviewer (HITL)** — Action Center approval for high-risk decisions.
-6. **Action Output** — execute the decision (notify line, ticket QA system, update CRM).
-7. **Notification Agent** — supervisor notification + immutable audit-log entry.
-
-End-to-end target: seconds-to-minutes per defect; full audit trail; HITL only where risk warrants it.
+End-to-end target: seconds-to-minutes per incident; full audit trail; HITL only where risk warrants it.
 
 ## Swap-ability matrix
 
 | Layer | Reference choice | Drop-in alternatives |
 |---|---|---|
-| Vision | AOI vision system | Landing AI, MVTec, Cognex VisionPro, mock/curated dataset |
-| Robot / sensor platform | Mobile inspection robot | Other mobile robots, fixed-camera setup, handheld AR tablet |
+| Mower platform | Segway Navimow X3-class | Husqvarna Automower, other ROS 2 fleets, mock fleet API |
+| Trigger source | Onboard vision + IMU + telemetry | Lidar, bump sensors, AR handheld, supplier feed |
 | LLM | Claude (primary), Gemini (fallback) | OpenAI, local LLM through LangChain |
-| Enterprise systems | Mocked QA ticket + CRM endpoints | ServiceNow, Salesforce, Jira, SAP via UiPath connectors |
+| Back-office | Mocked CMMS / warranty / parts endpoints | ServiceNow, Salesforce, SAP, dealer portals via UiPath RPA/connectors |
 
 ## What this is **not**
 
 - Not a single-vendor proof of concept.
-- Not a robot demo where UiPath sits beside the workflow.
-- Not a slide deck with a happy-path diagram — the orchestration is meant to actually run.
+- Not a robot demo where UiPath sits beside the workflow — UiPath *is* the orchestration (agentic + RPA).
+- Not a slide deck with a happy-path diagram — the orchestration is meant to actually run (`python run_pipeline.py`).

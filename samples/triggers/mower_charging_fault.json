@@ -1,0 +1,14 @@
+{
+  "incidentId": "IR-20260607-0004",
+  "source": { "type": "telemetry", "name": "navimow-fleet", "detectorConfidence": 0.99 },
+  "occurredAt": "2026-06-07T06:20:00Z",
+  "severity": "low",
+  "subject": "Routine: unit reported a slow dock-and-charge cycle overnight",
+  "description": "Minor operational note — the unit took longer than usual to dock and reach full charge overnight. No fault codes, battery health nominal. Likely a damp contact; self-resolved on the next cycle.",
+  "affectedItems": [
+    { "itemId": "MOW-NX3-21", "itemType": "unit", "quantity": 1 }
+  ],
+  "safetyZone": "none",
+  "reportedBy": { "principalType": "service-account", "principalId": "navimow-fleet-webhook", "displayName": "NavimowFleet telemetry" },
+  "tags": ["charging", "routine"]
+}

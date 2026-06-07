@@ -1,21 +1,17 @@
 {
   "incidentId": "IR-20260606-0003",
-  "source": {
-    "type": "vision",
-    "name": "iot-vibration-sensor-cluster",
-    "detectorConfidence": 0.87
-  },
-  "occurredAt": "2026-06-06T10:25:00Z",
-  "severity": "critical",
-  "subject": "Abnormal vibration pattern detected in turbine unit",
-  "description": "IoT vibration sensor reports sustained oscillation beyond safe threshold in turbine assembly, indicating potential mechanical failure.",
-  "reportedBy": {
-    "principalType": "automated-detector",
-    "principalId": "vibration-sensor-grid-7"
-  },
-  "tags": [
-    "vibration",
-    "turbine",
-    "critical"
-  ]
+  "source": { "type": "sensor", "name": "imu-tilt", "detectorConfidence": 0.95 },
+  "occurredAt": "2026-06-06T16:10:55Z",
+  "severity": "high",
+  "subject": "Tilt sensor: rollover risk on a steep embankment, wheel slip detected",
+  "description": "IMU + wheel-encoder fusion flagged rollover risk on a steep embankment beside the lawn — tilt 39 deg with intermittent wheel slip. Unit paused traverse and requested guidance.",
+  "affectedItems": [
+    { "itemId": "MOW-NX3-31", "itemType": "unit", "quantity": 1 }
+  ],
+  "safetyZone": "steep-slope",
+  "evidence": [
+    { "kind": "log", "uri": "s3://fleet-evidence/2026-06-06/IR-20260606-0003/tilt.json", "caption": "Tilt + wheel-slip fusion log" }
+  ],
+  "reportedBy": { "principalType": "automated-detector", "principalId": "imu-MOW31", "displayName": "IMU @ MOW-NX3-31" },
+  "tags": ["mobility", "tilt", "rollover", "steep-slope"]
 }

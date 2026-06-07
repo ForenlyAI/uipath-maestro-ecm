@@ -16,9 +16,9 @@ HIGH_RISK = {
     "incidentId": "IR-TEST-HIGH",
     "source": {"type": "vision", "detectorConfidence": 0.94},
     "severity": "high",
-    "subject": "NG_WIRING: misrouted cable on panel A-12",
-    "description": "wiring routing deviation flagged by AOI",
-    "complianceClass": "as9100",
+    "subject": "Mower stuck on steep slope, drivetrain stalled at 41 deg tilt",
+    "description": "fleet unit bogged on a wet slope; wheels slipping, drivetrain stalled",
+    "safetyZone": "steep-slope",
 }
 
 LOW_RISK = {
@@ -26,14 +26,14 @@ LOW_RISK = {
     "source": {"type": "manual", "detectorConfidence": 0.99},
     "severity": "low",
     "subject": "Routine operational note",
-    "description": "minor cosmetic scuff, no functional impact",
-    "complianceClass": "none",
+    "description": "minor cosmetic scuff on the housing, no functional impact",
+    "safetyZone": "none",
 }
 
 
 def test_high_risk_routes_to_hitl():
     disp, _ = analyze(HIGH_RISK)
-    assert disp["category"] == "WIRING_FAULT"
+    assert disp["category"] == "MOBILITY_FAULT"
     assert disp["hitlRequired"] is True
     assert 0.0 <= disp["riskScore"] <= 1.0
 

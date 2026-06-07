@@ -1,11 +1,11 @@
 """Impact Analysis — the agentic economic + organizational impact task node.
 
 Sits between root-cause analysis and the routing gateway in the Maestro BPMN.
-Given a canonical IncidentReport plus the Vision AI Analyst disposition, it
-estimates the **economic** and **organizational** impact of acting (or not) on a
-detected defect, and turns that into the routing signal: a costly, safety-
-critical, or fleet-wide defect escalates to a human review board (Action Center);
-a cheap, contained one is auto-resolved on the Fast Track.
+Given a canonical IncidentReport from a robotic lawn-mower fleet plus the Fleet AI
+Analyst disposition, it estimates the **economic** and **organizational** impact of
+acting (or not) on a detected fault, and turns that into the routing signal: a
+costly, safety-critical, or fleet-wide fault escalates to a human review board
+(Action Center); a cheap, contained one is auto-resolved on the Fast Track.
 
 Design choice: the *scoring is deterministic and auditable* (like the gateway in
 `samples/simulate_gateway.py`) — an LLM may narrate the rationale, but never sets
@@ -16,25 +16,26 @@ specific values.
 import re
 
 # --- Illustrative model parameters (not measured costs) ---------------------
-# Downtime cost per hour the affected asset is taken offline, by asset criticality.
+# Downtime cost per hour a mower (and its route) is offline, by asset criticality.
 DOWNTIME_USD_PER_HOUR = {"critical": 1200.0, "high": 600.0, "medium": 200.0, "low": 50.0}
-# Baseline direct repair/rework cost by defect category.
+# Baseline direct repair/service cost by fault category.
 REPAIR_BASE_USD = {
-    "STRUCTURAL_DEFECT": 1200.0,
-    "WIRING_FAULT": 400.0,
-    "COMMODITY_VARIANCE": 150.0,
+    "MOBILITY_FAULT": 600.0,
+    "BLADE_FAULT": 250.0,
+    "BOUNDARY_BREACH": 150.0,
     "OPERATIONAL_RISK": 100.0,
 }
-# Consequence cost if the defect is left unaddressed and fails in service.
+# Consequence cost if the fault is left unaddressed and fails in the field
+# (unit loss, off-property/road liability, blade-strike injury or property damage).
 FAILURE_CONSEQUENCE_USD = {
-    "STRUCTURAL_DEFECT": 40000.0,
-    "WIRING_FAULT": 12000.0,
-    "COMMODITY_VARIANCE": 3000.0,
+    "MOBILITY_FAULT": 15000.0,
+    "BOUNDARY_BREACH": 12000.0,
+    "BLADE_FAULT": 8000.0,
     "OPERATIONAL_RISK": 2000.0,
 }
-# Probability the defect fails in service, by severity.
+# Probability the fault fails / recurs in the field, by severity.
 P_FAILURE = {"critical": 0.6, "high": 0.4, "medium": 0.2, "low": 0.05}
-# Hours offline to remediate, by severity.
+# Hours the mower is offline to remediate, by severity.
 DOWNTIME_HOURS = {"critical": 16.0, "high": 8.0, "medium": 4.0, "low": 1.0}
 # Lead time (days) to remediate, by severity.
 LEAD_TIME_DAYS = {"critical": 5, "high": 3, "medium": 2, "low": 1}
@@ -45,12 +46,11 @@ ECONOMIC_CAP_USD = 25000.0
 ECONOMIC_HITL_THRESHOLD = 0.40          # economicImpactScore >= this -> HITL
 FLEET_QUANTITY_THRESHOLD = 10           # affected units >= this -> fleet-wide
 
-# Compliance classes that make a defect inherently safety-critical.
-SAFETY_COMPLIANCE = ("as9100", "iso13485")
-# Defect cues (in subject/description) that imply a safety-critical failure mode.
-# Specific failure-mode words only — "structural" is covered by the category branch,
-# and listing it here would false-trip on "non-structural".
-SAFETY_CUES = ("crack", "fracture", "weld", "brake", "rupture", "delamination")
+# Operating zones that make a fault inherently safety-critical for a mower.
+SAFETY_ZONES = ("near-road", "near-water", "public-access", "steep-slope")
+# Fault cues (in subject/description) that imply a safety-critical failure mode —
+# someone could be hurt or the unit lost.
+SAFETY_CUES = ("strike", "road", "water", "rollover", "tip", "injury", "person", "child", "pond")
 
 
 def _severity(incident):
@@ -62,7 +62,7 @@ def _affected_units(incident):
 
 
 def _org_scope(incident):
-    """SINGLE_ASSET / MULTI_TEAM / FLEET_WIDE — how wide the organizational reach is."""
+    """SINGLE_UNIT / MULTI_TEAM / FLEET_WIDE — how wide the organizational reach is."""
     units = _affected_units(incident)
     tags = " ".join(incident.get("tags", [])).lower()
     if units >= FLEET_QUANTITY_THRESHOLD or "fleet" in tags or "recall" in tags:
@@ -71,34 +71,36 @@ def _org_scope(incident):
     item_types = {i.get("itemType") for i in incident.get("affectedItems", [])}
     if len(suppliers) > 1 or len(item_types) > 1:
         return "MULTI_TEAM"
-    return "SINGLE_ASSET"
+    return "SINGLE_UNIT"
 
 
 def _safety_critical(incident, disposition):
-    if incident.get("complianceClass", "").lower() in SAFETY_COMPLIANCE:
+    if incident.get("safetyZone", "").lower() in SAFETY_ZONES:
         return True
-    if disposition.get("category") == "STRUCTURAL_DEFECT" and _severity(incident) in ("high", "critical"):
+    if disposition.get("category") in ("MOBILITY_FAULT", "BLADE_FAULT") and _severity(incident) in ("high", "critical"):
         return True
     blob = (incident.get("subject", "") + " " + incident.get("description", "")).lower()
-    # Word-boundary match so "non-structural" does NOT trip the "structural" cue.
+    # Word-boundary match so e.g. "watering" does NOT trip the "water" cue.
     tokens = set(re.findall(r"[a-z]+", blob))
     return any(cue in tokens for cue in SAFETY_CUES)
 
 
 def _roles_engaged(incident, disposition, safety_critical, org_scope):
-    """Which teams the defect pulls in — the organizational footprint."""
+    """Which teams the fault pulls in — the organizational footprint."""
     roles = ["AI Analyst"]
     cat = disposition.get("category")
-    if cat == "STRUCTURAL_DEFECT":
-        roles.append("Structural Engineer")
-    elif cat == "WIRING_FAULT":
-        roles.append("Electrical Maintenance")
-    roles.append("Maintenance Crew")
+    if cat == "MOBILITY_FAULT":
+        roles.append("Drivetrain Technician")
+    elif cat == "BLADE_FAULT":
+        roles.append("Cutting-Deck Technician")
+    elif cat == "BOUNDARY_BREACH":
+        roles.append("Navigation/RTK Specialist")
+    roles.append("Fleet Maintenance Crew")
     if safety_critical:
         roles.append("Safety Officer")
     if org_scope in ("MULTI_TEAM", "FLEET_WIDE"):
         roles.append("Procurement")
-        roles.append("Operations Manager")
+        roles.append("Fleet Operations Manager")
     if org_scope == "FLEET_WIDE":
         roles.append("Reliability Engineering")
     return roles

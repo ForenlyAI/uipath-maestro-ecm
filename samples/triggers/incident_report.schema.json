@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/forenly-ai-systems/uipath-maestro-ecm/blob/main/samples/triggers/incident_report.schema.json",
+  "$id": "https://github.com/Forenly/uipath-maestro-ecm/blob/main/samples/triggers/incident_report.schema.json",
   "title": "IncidentReport",
-  "description": "Canonical shape consumed by Container 1 (Problem Report). Every trigger source — vision API, ERP event, manual portal, supplier deviation report — normalizes its input to this shape before entering the BPMN. The Analyst agent, IRB Action Center HITL, and downstream containers all read this object.",
+  "description": "Canonical shape consumed by Container 1 (Problem Report) for a robotic lawn-mower fleet. Every trigger source — onboard vision, mower telemetry, a fixed sensor, or a field-operator handheld portal — normalizes its input to this shape before entering the BPMN. The Fleet AI Analyst agent, IRB Action Center HITL, and downstream containers all read this object.",
   "type": "object",
   "required": ["incidentId", "source", "occurredAt", "severity", "subject", "description"],
   "additionalProperties": false,
@@ -21,13 +21,13 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["vision", "erp", "manual", "supplier"],
-          "description": "Trigger source category. Determines which adapter normalized the input."
+          "enum": ["vision", "sensor", "telemetry", "manual"],
+          "description": "Trigger source category. Determines which adapter normalized the input. `vision`=onboard camera/AI, `sensor`=onboard IMU/lidar/bump, `telemetry`=fleet platform event, `manual`=field-operator handheld portal."
         },
         "name": {
           "type": "string",
-          "description": "Specific provider/system name (e.g., `aoi-vision`, `sap-erp`, `qa-web-portal`, `supplier-acme-erp`).",
-          "examples": ["aoi-vision", "sap-erp-prod", "qa-portal", "acme-supplier-erp"]
+          "description": "Specific provider/system name.",
+          "examples": ["onboard-cam", "imu-tilt", "navimow-fleet", "operator-handheld"]
         },
         "detectorConfidence": {
           "type": "number",
@@ -51,16 +51,16 @@
       "type": "string",
       "minLength": 3,
       "maxLength": 200,
-      "description": "Short human-readable headline (e.g., `NG_WIRING: misrouted cable, panel A-12`)."
+      "description": "Short human-readable headline (e.g., `BLADE_JAM: foreign object in cutting deck, unit MOW-07`)."
     },
     "description": {
       "type": "string",
       "minLength": 10,
-      "description": "Free-form details supplied by the source. May include error codes, observed measurements, comparison to spec, attached evidence URIs."
+      "description": "Free-form details supplied by the source. May include error codes, observed measurements (tilt angle, GPS drift), comparison to spec, attached evidence URIs."
     },
     "affectedItems": {
       "type": "array",
-      "description": "BOM-level items implicated by the incident. Drives supplier impact analysis in Container 4.",
+      "description": "Fleet units / parts implicated by the incident. Drives supplier & parts impact analysis in Container 4.",
       "items": {
         "type": "object",
         "required": ["itemId", "itemType"],
@@ -68,34 +68,34 @@
         "properties": {
           "itemId": {
             "type": "string",
-            "description": "PLM part number, BOM line, or supplier catalog number.",
-            "examples": ["PRT-4521-Rev-C", "BOM-A12.cable.7"]
+            "description": "Mower unit id, part number, or module id.",
+            "examples": ["MOW-NX3-07", "BLADE-DECK-21", "RTK-MODULE-3"]
           },
           "itemType": {
             "type": "string",
-            "enum": ["part", "assembly", "bom-line", "configuration-item"]
+            "enum": ["unit", "part", "assembly", "module", "bom-line"]
           },
           "supplierId": {
             "type": "string",
-            "description": "Optional supplier identifier; populated when an item is sourced externally.",
-            "examples": ["sup-acme-001", "sup-bosch-emea-217"]
+            "description": "Optional supplier identifier; populated when a part is sourced externally.",
+            "examples": ["sup-segway-emea-217", "sup-blades-acme-001"]
           },
           "quantity": {
             "type": "number",
             "minimum": 0,
-            "description": "Affected quantity or count of units in the affected lot."
+            "description": "Affected quantity or count of units in the affected batch."
           }
         }
       }
     },
-    "complianceClass": {
+    "safetyZone": {
       "type": "string",
-      "enum": ["none", "as9100", "iso10007", "iso13485", "gmp", "iatf-16949", "other"],
-      "description": "Regulated-industry compliance class of the affected items. Drives the Risk Agent (high compliance class biases toward Full Track / CRB HITL)."
+      "enum": ["none", "near-road", "near-water", "public-access", "steep-slope", "other"],
+      "description": "Operating zone of the mower when the incident occurred. Safety-critical zones (near-road, near-water, public-access, steep-slope) bias the Risk Agent toward Full Track / human review (a mower misbehaving here can hurt someone or be lost)."
     },
     "evidence": {
       "type": "array",
-      "description": "Supporting evidence URIs (defect images, ERP screenshots, supplier deviation PDFs).",
+      "description": "Supporting evidence URIs (onboard captures, telemetry logs, operator photos).",
       "items": {
         "type": "object",
         "required": ["kind", "uri"],
@@ -140,7 +140,7 @@
       "type": "array",
       "description": "Free-form tags used by the Analyst agent for clustering related incidents.",
       "items": { "type": "string" },
-      "examples": [["wiring", "panel-A", "shift-2"]]
+      "examples": [["blade", "near-road", "route-12"]]
     },
     "vendor": {
       "type": "object",

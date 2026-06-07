@@ -1,22 +1,15 @@
 {
   "incidentId": "IR-20260606-0001",
-  "source": {
-    "type": "manual",
-    "name": "handheld-operator-app",
-    "detectorConfidence": 1.0
-  },
-  "occurredAt": "2026-06-06T10:15:00Z",
+  "source": { "type": "manual", "name": "operator-handheld", "detectorConfidence": 1.0 },
+  "occurredAt": "2026-06-06T14:05:30Z",
   "severity": "medium",
-  "subject": "Hydraulic leak observed in maintenance bay 3",
-  "description": "Operator manually reported visible hydraulic fluid leakage near actuator joint during inspection round.",
-  "reportedBy": {
-    "principalType": "human",
-    "principalId": "op-042",
-    "displayName": "Field Operator"
-  },
-  "tags": [
-    "hydraulic",
-    "leak",
-    "maintenance-bay-3"
-  ]
+  "subject": "Operator report: grass clumping and mild blade jam on unit MOW-NX3-15",
+  "description": "Field operator logged via the handheld portal that the cutting deck was clumping wet grass and briefly jammed. Cleared by hand; recommends a blade/deck service. No injury, mid-lawn open area.",
+  "affectedItems": [
+    { "itemId": "MOW-NX3-15", "itemType": "unit", "quantity": 1 },
+    { "itemId": "BLADE-DECK-15", "itemType": "module", "quantity": 1 }
+  ],
+  "safetyZone": "none",
+  "reportedBy": { "principalType": "human", "principalId": "op-3391", "displayName": "Field Operator (handheld)" },
+  "tags": ["blade", "jam", "operator-report"]
 }

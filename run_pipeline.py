@@ -13,7 +13,7 @@ same stages the UiPath Maestro BPMN models, as plain Python task nodes:
 
 Usage:
     python run_pipeline.py                                  # run all sample triggers
-    python run_pipeline.py samples/triggers/vision_aoi_defect.json
+    python run_pipeline.py samples/triggers/mower_blade_strike.json
 """
 import glob
 import json

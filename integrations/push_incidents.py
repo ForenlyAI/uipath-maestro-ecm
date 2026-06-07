@@ -25,14 +25,14 @@ QUEUE = "IncidentReports"
 
 def main():
     orc = Orchestrator()
-    orc.ensure_queue(QUEUE, "Physical AI field-inspection incidents — agentic HITL triage")
+    orc.ensure_queue(QUEUE, "Robotic lawn-mower fleet incidents — agentic HITL triage")
     triggers = sorted(p for p in glob.glob("samples/triggers/*.json") if "schema" not in p)
     for path in triggers:
         inc = json.load(open(path))
         disp, _ = analyze(inc)
         content = {
             "incidentId": inc["incidentId"], "severity": inc.get("severity"),
-            "subject": inc.get("subject"), "complianceClass": inc.get("complianceClass", "n/a"),
+            "subject": inc.get("subject"), "safetyZone": inc.get("safetyZone", "none"),
             "category": disp["category"], "riskScore": disp["riskScore"],
             "confidence": disp["confidence"], "hitlRequired": disp["hitlRequired"],
             "suggestedAction": disp["suggestedAction"],
