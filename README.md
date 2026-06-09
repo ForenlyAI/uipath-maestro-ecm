@@ -1,5 +1,10 @@
 # uipath-maestro-ecm — Agentic Robotic Lawn-Mower Fleet Ops on UiPath Maestro
 
+> [!IMPORTANT]
+> ### 🏆 GRAND PRIZE POOL: $48,000 USD!
+> **Grand Prize:** $8,000 USD Cash + Global UiPath Recognition! Let's automate the enterprise with fütüristik AI Orchestration! 🤖💼
+
+
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 
 > An open-source framework for running **robotic lawn-mower fleet incident triage & remediation** as an **agentic, human-in-the-loop (HITL) orchestration** on **UiPath Maestro BPMN** — combining UiPath's two signature strengths: **agentic AI** (Agent Builder decisioning) and **RPA** (robots that execute into the fleet's legacy/back-office systems).
