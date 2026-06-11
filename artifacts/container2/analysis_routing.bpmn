@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uipath="http://uipath.com/schema/bpmn" id="Definitions_Container2" targetNamespace="http://bpmn.io/schema/bpmn" exporter="UiPath Maestro Modeler" exporterVersion="2026.1.0">
+  <bpmn:collaboration id="Collaboration_Container2">
+    <bpmn:participant id="Participant_AnalysisRouting" name="Container 2 — Analysis &amp; Safety Routing Subprocess" processRef="Process_AnalysisRouting" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_AnalysisRouting" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_Container2">
+      <bpmn:lane id="Lane_Intake" name="Subprocess Intake Gate">
+        <bpmn:flowNodeRef>StartEvent_AnalysisTriggered</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_ClassificationAI" name="Classification Agent (Agent Builder)">
+        <bpmn:flowNodeRef>Task_ClassificationAgent</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_RiskAI" name="Safety Risk Agent (Agent Builder)">
+        <bpmn:flowNodeRef>Task_RiskAgent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_FastTrackCheck</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Routing" name="Safety Routing Gateways">
+        <bpmn:flowNodeRef>EndEvent_FastTrackApproved</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_HITLRequired</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    
+    <!-- Flow Nodes -->
+    <bpmn:startEvent id="StartEvent_AnalysisTriggered" name="Analysis Subprocess Triggered">
+      <bpmn:outgoing>Flow_To_Classification</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <bpmn:serviceTask id="Task_ClassificationAgent" name="Run Classification Agent" uipath:agentRef="agent_classification.yaml">
+      <bpmn:incoming>Flow_To_Classification</bpmn:incoming>
+      <bpmn:outgoing>Flow_To_Risk</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <bpmn:serviceTask id="Task_RiskAgent" name="Assess Safety Risk (Risk Agent)" uipath:agentRef="agent_risk.yaml">
+      <bpmn:incoming>Flow_To_Risk</bpmn:incoming>
+      <bpmn:outgoing>Flow_To_Gateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <bpmn:exclusiveGateway id="Gateway_FastTrackCheck" name="Fast Track? (Risk &lt; 0.15 AND Confidence &gt;= 0.70)">
+      <bpmn:incoming>Flow_To_Gateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_FastTrackApproved</bpmn:outgoing>
+      <bpmn:outgoing>Flow_HITLRequired</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <bpmn:endEvent id="EndEvent_FastTrackApproved" name="Fast Track Approved (Low Risk)">
+      <bpmn:incoming>Flow_FastTrackApproved</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <bpmn:endEvent id="EndEvent_HITLRequired" name="Full Track Review Required (High Risk/Uncertain)">
+      <bpmn:incoming>Flow_HITLRequired</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequences -->
+    <bpmn:sequenceFlow id="Flow_To_Classification" sourceRef="StartEvent_AnalysisTriggered" targetRef="Task_ClassificationAgent" />
+    <bpmn:sequenceFlow id="Flow_To_Risk" sourceRef="Task_ClassificationAgent" targetRef="Task_RiskAgent" />
+    <bpmn:sequenceFlow id="Flow_To_Gateway" sourceRef="Task_RiskAgent" targetRef="Gateway_FastTrackCheck" />
+    <bpmn:sequenceFlow id="Flow_FastTrackApproved" name="Yes (Auto)" sourceRef="Gateway_FastTrackCheck" targetRef="EndEvent_FastTrackApproved">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${riskScore &lt; 0.15 &amp;&amp; confidence &gt;= 0.70}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_HITLRequired" name="No (HITL)" sourceRef="Gateway_FastTrackCheck" targetRef="EndEvent_HITLRequired">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${riskScore &gt;= 0.15 || confidence &lt; 0.70}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+  </bpmn:process>
+  
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Container2">
+    <bpmndi:BPMNPlane id="BPMNPlane_Container2" bpmnElement="Collaboration_Container2">
+      <bpmndi:BPMNParticipant id="Participant_AnalysisRouting_di" bpmnElement="Participant_AnalysisRouting" isHorizontal="true">
+        <dc:Bounds x="120" y="50" width="900" height="520" />
+      </bpmndi:BPMNParticipant>
+      
+      <!-- Lanes -->
+      <bpmndi:BPMNLane id="Lane_Intake_di" bpmnElement="Lane_Intake" isHorizontal="true">
+        <dc:Bounds x="150" y="50" width="870" height="130" />
+      </bpmndi:BPMNLane>
+      <bpmndi:BPMNLane id="Lane_ClassificationAI_di" bpmnElement="Lane_ClassificationAI" isHorizontal="true">
+        <dc:Bounds x="150" y="180" width="870" height="130" />
+      </bpmndi:BPMNLane>
+      <bpmndi:BPMNLane id="Lane_RiskAI_di" bpmnElement="Lane_RiskAI" isHorizontal="true">
+        <dc:Bounds x="150" y="310" width="870" height="130" />
+      </bpmndi:BPMNLane>
+      <bpmndi:BPMNLane id="Lane_Routing_di" bpmnElement="Lane_Routing" isHorizontal="true">
+        <dc:Bounds x="150" y="440" width="870" height="130" />
+      </bpmndi:BPMNLane>
+      
+      <!-- Start Event -->
+      <bpmndi:BPMNShape id="StartEvent_AnalysisTriggered_di" bpmnElement="StartEvent_AnalysisTriggered">
+        <dc:Bounds x="200" y="97" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="180" y="140" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Classification Task -->
+      <bpmndi:BPMNShape id="Task_ClassificationAgent_di" bpmnElement="Task_ClassificationAgent">
+        <dc:Bounds x="300" y="205" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Risk Task -->
+      <bpmndi:BPMNShape id="Task_RiskAgent_di" bpmnElement="Task_RiskAgent">
+        <dc:Bounds x="460" y="335" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Gateway -->
+      <bpmndi:BPMNShape id="Gateway_FastTrackCheck_di" bpmnElement="Gateway_FastTrackCheck" isMarkerVisible="true">
+        <dc:Bounds x="660" y="350" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="644" y="300" width="82" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- End Events -->
+      <bpmndi:BPMNShape id="EndEvent_FastTrackApproved_di" bpmnElement="EndEvent_FastTrackApproved">
+        <dc:Bounds x="850" y="465" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="830" y="508" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <bpmndi:BPMNShape id="EndEvent_HITLRequired_di" bpmnElement="EndEvent_HITLRequired">
+        <dc:Bounds x="850" y="515" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="830" y="558" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="Flow_To_Classification_di" bpmnElement="Flow_To_Classification">
+        <di:waypoint x="236" y="115" />
+        <di:waypoint x="268" y="115" />
+        <di:waypoint x="268" y="245" />
+        <di:waypoint x="300" y="245" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_To_Risk_di" bpmnElement="Flow_To_Risk">
+        <di:waypoint x="420" y="245" />
+        <di:waypoint x="440" y="245" />
+        <di:waypoint x="440" y="375" />
+        <di:waypoint x="460" y="375" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_To_Gateway_di" bpmnElement="Flow_To_Gateway">
+        <di:waypoint x="580" y="375" />
+        <di:waypoint x="660" y="375" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_FastTrackApproved_di" bpmnElement="Flow_FastTrackApproved">
+        <di:waypoint x="685" y="400" />
+        <di:waypoint x="685" y="483" />
+        <di:waypoint x="850" y="483" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="702" y="461" width="51" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_HITLRequired_di" bpmnElement="Flow_HITLRequired">
+        <di:waypoint x="710" y="375" />
+        <di:waypoint x="760" y="375" />
+        <di:waypoint x="760" y="533" />
+        <di:waypoint x="850" y="533" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="771" y="511" width="48" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

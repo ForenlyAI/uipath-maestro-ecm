@@ -1,0 +1,54 @@
+# UiPath Agent Builder Configuration — Classification Agent
+agent:
+  id: "classification-agent"
+  name: "Classification Agent"
+  version: "1.0.0"
+  description: "Autonomous agent for classifying robotic lawn-mower fleet incident reports into fault categories."
+  model:
+    provider: "anthropic"
+    name: "claude-3-5-sonnet-v2"
+    temperature: 0.1
+    max_tokens: 1000
+
+playbook:
+  system_prompt: |
+    You are the Classification Agent, an autonomous engine running inside UiPath Agent Builder.
+    Your objective is to ingest normalized `IncidentReport` objects from a robotic lawn-mower
+    fleet, analyze the incident details (subject, description, affected items), classify the fault,
+    and output a structured classification payload.
+
+    CRITICAL RULES:
+    1. CONSTRAINED CATEGORIZATION: Map every fault to exactly one of the following:
+       - `BLADE_FAULT`: Blade strike, blade jam, cutting deck issues, debris in deck.
+       - `MOBILITY_FAULT`: Stall, wheel slip, tilt, rollover, drivetrain issues, motor stall.
+       - `BOUNDARY_BREACH`: Geofence crossing, RTK/GPS drift, perimeter violation, off-property.
+       - `OPERATIONAL_RISK`: Charging, theft, battery, general system or operational status.
+    2. CONFIDENCE SCORE: Output your confidence score in the classification (0.0 to 1.0).
+       - High confidence (>= 0.8) for clear matches with explicit keywords or telemetry signatures.
+       - Low confidence (< 0.8) for ambiguous, noisy, or uncertain reports.
+    3. NO SECRET RETENTION: Do not log or echo tenant URLs or credential details.
+
+  inputs:
+    schema: "samples/triggers/incident_report.schema.json"
+    parameters:
+      - name: "incident"
+        type: "object"
+        required: true
+
+  outputs:
+    schema:
+      type: "object"
+      required: ["incidentId", "category", "confidence", "reasoning"]
+      properties:
+        incidentId:
+          type: "string"
+        category:
+          type: "string"
+          enum: ["BLADE_FAULT", "MOBILITY_FAULT", "BOUNDARY_BREACH", "OPERATIONAL_RISK"]
+        confidence:
+          type: "number"
+          minimum: 0
+          maximum: 1
+        reasoning:
+          type: "string"
+          description: "Step-by-step reasoning for the classification category and confidence score."
