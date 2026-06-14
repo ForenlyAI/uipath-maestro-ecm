@@ -12,6 +12,8 @@ _AUDIT: list[dict] = []
 _SUPPLIERS = {
     "sup-acme-001": {"supplierId": "sup-acme-001", "name": "ACME Assemblies", "tier": "A", "openNCRs": 2},
     "sup-globex-002": {"supplierId": "sup-globex-002", "name": "Globex Components", "tier": "B", "openNCRs": 5},
+    "sup-techparts-003": {"supplierId": "sup-techparts-003", "name": "TechParts Industries", "tier": "A", "openNCRs": 0},
+    "sup-primecut-004": {"supplierId": "sup-primecut-004", "name": "PrimeCut Robotics", "tier": "C", "openNCRs": 12},
 }
 
 
@@ -19,7 +21,8 @@ def get_supplier(supplier_id):
     return _SUPPLIERS.get(supplier_id)
 
 
-def open_ticket(incident_id, category, suggested_action, risk_score, assigned_to="qa-queue"):
+def open_ticket(incident_id, category, suggested_action, risk_score, assigned_to="qa-queue",
+                supplier_context=None):
     record = {
         "ticketId": f"QA-{len(_TICKETS) + 1:05d}",
         "incidentId": incident_id,
@@ -28,6 +31,7 @@ def open_ticket(incident_id, category, suggested_action, risk_score, assigned_to
         "riskScore": risk_score,
         "assignedTo": assigned_to,
         "status": "OPEN",
+        "supplierContext": supplier_context or {},
     }
     _TICKETS.append(record)
     return record

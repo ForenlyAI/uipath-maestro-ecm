@@ -106,3 +106,53 @@ class Orchestrator:
         })
         return self._request(f"{self.base}/odata/QueueItems?{query}",
                              headers=self._auth_headers())["value"]
+
+    def get_next_item(self, queue_name):
+        """Pop the next New item from *queue_name* as a transaction (StartTransaction).
+
+        Returns the queue-item dict (including ``Id`` and ``SpecificContent``) if a
+        New item is available, or ``None`` when the queue is empty.
+
+        The item transitions from New → InProgress in Orchestrator so no other
+        robot/process picks it up concurrently.
+        """
+        result = self._request(
+            f"{self.base}/odata/Queues/UiPathODataSvc.StartTransaction",
+            data={"transactionData": {"Name": queue_name}},
+            headers=self._auth_headers(),
+            method="POST",
+        )
+        # Orchestrator returns {"value": null} when the queue is empty.
+        value = result.get("value")
+        return value if value else None
+
+    def set_transaction_status(self, item_id, status, reason=""):
+        """Update a queue item that is InProgress (SetTransactionResult).
+
+        Args:
+            item_id: The ``Id`` returned by ``get_next_item``.
+            status:  ``"Successful"`` or ``"Failed"`` (Orchestrator vocabulary).
+            reason:  Free-text output / error message stored on the item.
+
+        Raises:
+            RuntimeError: if Orchestrator returns an HTTP error.
+        """
+        if status not in ("Successful", "Failed"):
+            raise ValueError(f"status must be 'Successful' or 'Failed', got {status!r}")
+
+        payload = {
+            "transactionResult": {
+                "IsSuccessful": status == "Successful",
+                "ProcessingException": None if status == "Successful" else {
+                    "Reason": reason,
+                    "Type": "ApplicationException",
+                },
+                "Output": {"reason": reason} if status == "Successful" else None,
+            }
+        }
+        self._request(
+            f"{self.base}/odata/Queues({item_id})/UiPathODataSvc.SetTransactionResult",
+            data=payload,
+            headers=self._auth_headers(),
+            method="POST",
+        )

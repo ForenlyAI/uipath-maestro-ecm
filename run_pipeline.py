@@ -50,9 +50,28 @@ def process(incident):
         route = "AUTONOMOUS"
 
     # Stage: Action — open a remediation ticket in the (mock) enterprise system
+    # CRM supplier-impact lookup: enrich context with supplier tier / openNCRs.
+    supplier_context = {}
+    affected_items = incident.get("affectedItems", [])
+    for item in affected_items:
+        sid = item.get("supplierId")
+        if sid:
+            supplier = store.get_supplier(sid)
+            if supplier:
+                supplier_context[sid] = {
+                    "name": supplier["name"],
+                    "tier": supplier["tier"],
+                    "openNCRs": supplier["openNCRs"],
+                }
+                print(f"  crm     -> supplier {sid} ({supplier['name']}) "
+                      f"tier={supplier['tier']} openNCRs={supplier['openNCRs']}")
+            else:
+                print(f"  crm     -> supplier {sid} not found in CRM")
+
     ticket = store.open_ticket(
         iid, disp["category"], disp["suggestedAction"], disp["riskScore"],
         assigned_to="compliance-board" if route == "ACTION_CENTER" else "auto-remediation",
+        supplier_context=supplier_context,
     )
     print(f"  action  -> {ticket['ticketId']} ({ticket['status']}, owner={ticket['assignedTo']})")
     _audit(iid, "ACTION", "enterprise-api", f"opened {ticket['ticketId']} -> {ticket['assignedTo']}")
