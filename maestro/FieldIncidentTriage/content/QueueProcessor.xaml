@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  QueueProcessor.xaml
+  UiPath Studio Workflow — IncidentReports Queue Consumer
+  ========================================================
+  Dequeues one item at a time from the IncidentReports Orchestrator queue,
+  reads SpecificContent.hitlRequired / route, branches to either:
+    • HITL branch  → creates an Action Center action (ComplianceReviewBoard type)
+    • Fast Track   → autonomous remediation stub (logs + dispatches mock API call)
+  Sets the transaction status (Successful / Failed) in a Finally block.
+
+  Consumed by the Maestro BPMN task node "Dequeue & Route" (Activity_dequeue_route).
+  The BPMN manages retries at the process level; this workflow owns the single-item
+  transaction lifecycle.
+
+  Orchestrator queue:   IncidentReports  (Shared folder)
+  Action type name:     ComplianceReviewBoard  (registered via action_type_compliance_review.json)
+  Action type version:  1
+-->
+<Activity
+  x:Class="FieldIncidentTriage.QueueProcessor"
+  xmlns="http://schemas.microsoft.com/netfx/2009/xaml/activities"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:ui="http://schemas.uipath.com/workflow/activities"
+  xmlns:scg="clr-namespace:System.Collections.Generic;assembly=mscorlib"
+  xmlns:s="clr-namespace:System;assembly=mscorlib"
+  xmlns:upaf="clr-namespace:UiPath.Persistence.Activities.FormTask;assembly=UiPath.Persistence.Activities"
+  DisplayName="QueueProcessor — IncidentReports"
+  sap2010:WorkflowViewState.IdRef="QueueProcessor_1">
+
+  <!-- ================================================================
+       ARGUMENTS  (passed in by the Maestro BPMN task node)
+       ================================================================ -->
+  <x:Members>
+    <!-- Orchestrator queue name — defaults to the live queue -->
+    <x:Property Name="in_QueueName"           Type="InArgument(x:String)"  />
+    <!-- Orchestrator folder name (e.g. "Shared") -->
+    <x:Property Name="in_FolderName"          Type="InArgument(x:String)"  />
+    <!-- Action Center registered action type name -->
+    <x:Property Name="in_ActionTypeName"      Type="InArgument(x:String)"  />
+    <!-- Action Center action version -->
+    <x:Property Name="in_ActionTypeVersion"   Type="InArgument(x:Int32)"   />
+    <!-- Assignee/catalog for the review board task -->
+    <x:Property Name="in_AssigneeGroup"       Type="InArgument(x:String)"  />
+    <!-- OUT: final transaction status set by this workflow -->
+    <x:Property Name="out_TransactionStatus"  Type="OutArgument(x:String)" />
+    <!-- OUT: Action Center task Id (empty if Fast Track) -->
+    <x:Property Name="out_ActionTaskId"       Type="OutArgument(x:String)" />
+    <!-- OUT: route taken — HITL | FAST_TRACK | NO_ITEM -->
+    <x:Property Name="out_RouteTaken"         Type="OutArgument(x:String)" />
+  </x:Members>
+
+  <!-- ================================================================
+       BODY
+       ================================================================ -->
+  <Sequence DisplayName="[QueueProcessor] Main Sequence">
+
+    <!-- ── 1. Declare local variables ─────────────────────────────── -->
+    <Sequence.Variables>
+      <Variable Name="transactionItem"   Type="ui:QueueItem"               />
+      <Variable Name="specificContent"   Type="scg:Dictionary(s:String,s:Object)" />
+      <Variable Name="hitlRequired"      Type="s:Boolean"   Default="False" />
+      <Variable Name="route"             Type="s:String"    Default="AUTONOMOUS" />
+      <Variable Name="incidentId"        Type="s:String"    Default="" />
+      <Variable Name="category"          Type="s:String"    Default="" />
+      <Variable Name="riskScore"         Type="s:Double"    Default="0" />
+      <Variable Name="confidence"        Type="s:Double"    Default="0" />
+      <Variable Name="severity"          Type="s:String"    Default="" />
+      <Variable Name="subject"           Type="s:String"    Default="" />
+      <Variable Name="safetyZone"        Type="s:String"    Default="" />
+      <Variable Name="suggestedAction"   Type="s:String"    Default="" />
+      <Variable Name="taskObject"        Type="upaf:FormTaskData"           />
+      <Variable Name="actionTaskId"      Type="s:String"    Default="" />
+      <Variable Name="txStatus"          Type="s:String"    Default="Failed" />
+      <Variable Name="errorMessage"      Type="s:String"    Default="" />
+    </Sequence.Variables>
+
+    <!-- ── 2. Get Transaction Item ────────────────────────────────── -->
+    <!--
+      UiPath Activity: UiPath.Core.Activities.GetQueueItem
+      Dequeues the next New item; returns null when the queue is empty.
+    -->
+    <ui:GetTransactionItem
+      DisplayName="Get Transaction Item (IncidentReports)"
+      QueueName="[in_QueueName]"
+      TransactionItem="[transactionItem]"
+      FolderPath="[in_FolderName]" />
+
+    <!-- ── 3. Guard — exit gracefully when queue is empty ─────────── -->
+    <If DisplayName="Queue Empty?" Condition="[transactionItem Is Nothing]">
+      <If.Then>
+        <Sequence DisplayName="No Item — terminate cleanly">
+          <Assign DisplayName="Mark route = NO_ITEM">
+            <Assign.To>[out_RouteTaken]</Assign.To>
+            <Assign.Value>"NO_ITEM"</Assign.Value>
+          </Assign>
+          <Assign DisplayName="Status = Successful (nothing to process)">
+            <Assign.To>[out_TransactionStatus]</Assign.To>
+            <Assign.Value>"Successful"</Assign.Value>
+          </Assign>
+          <!-- Return early — no item to set status on -->
+          <Terminate DisplayName="Terminate — empty queue" />
+        </Sequence>
+      </If.Then>
+    </If>
+
+    <!-- ── 4. Try / Catch / Finally — transaction lifecycle ───────── -->
+    <TryCatch DisplayName="Transaction Lifecycle">
+      <TryCatch.Try>
+        <Sequence DisplayName="Process Item">
+
+          <!-- 4a. Extract SpecificContent fields -->
+          <Assign DisplayName="Capture SpecificContent dictionary">
+            <Assign.To>[specificContent]</Assign.To>
+            <Assign.Value>[transactionItem.SpecificContent]</Assign.Value>
+          </Assign>
+
+          <!-- hitlRequired -->
+          <ui:InvokeMethod
+            DisplayName="Read hitlRequired"
+            TargetObject="[specificContent]"
+            MethodName="TryGetValue">
+            <ui:InvokeMethod.Parameters>
+              <InArgument x:TypeArguments="s:String">"hitlRequired"</InArgument>
+              <OutArgument x:TypeArguments="s:Object">[hitlRequired]</OutArgument>
+            </ui:InvokeMethod.Parameters>
+          </ui:InvokeMethod>
+
+          <!-- route -->
+          <ui:InvokeMethod
+            DisplayName="Read route"
+            TargetObject="[specificContent]"
+            MethodName="TryGetValue">
+            <ui:InvokeMethod.Parameters>
+              <InArgument x:TypeArguments="s:String">"route"</InArgument>
+              <OutArgument x:TypeArguments="s:Object">[route]</OutArgument>
+            </ui:InvokeMethod.Parameters>
+          </ui:InvokeMethod>
+
+          <!-- Scalar fields -->
+          <Assign DisplayName="Capture incidentId">
+            <Assign.To>[incidentId]</Assign.To>
+            <Assign.Value>[If(specificContent.ContainsKey("incidentId"), specificContent("incidentId").ToString(), transactionItem.Reference)]</Assign.Value>
+          </Assign>
+          <Assign DisplayName="Capture category">
+            <Assign.To>[category]</Assign.To>
+            <Assign.Value>[If(specificContent.ContainsKey("category"), specificContent("category").ToString(), "UNKNOWN")]</Assign.Value>
+          </Assign>
+          <Assign DisplayName="Capture riskScore">
+            <Assign.To>[riskScore]</Assign.To>
+            <Assign.Value>[If(specificContent.ContainsKey("riskScore"), Double.Parse(specificContent("riskScore").ToString()), 0.0)]</Assign.Value>
+          </Assign>
+          <Assign DisplayName="Capture confidence">
+            <Assign.To>[confidence]</Assign.To>
+            <Assign.Value>[If(specificContent.ContainsKey("confidence"), Double.Parse(specificContent("confidence").ToString()), 0.0)]</Assign.Value>
+          </Assign>
+          <Assign DisplayName="Capture severity">
+            <Assign.To>[severity]</Assign.To>
+            <Assign.Value>[If(specificContent.ContainsKey("severity"), specificContent("severity").ToString(), "")]</Assign.Value>
+          </Assign>
+          <Assign DisplayName="Capture subject">
+            <Assign.To>[subject]</Assign.To>
+            <Assign.Value>[If(specificContent.ContainsKey("subject"), specificContent("subject").ToString(), "")]</Assign.Value>
+          </Assign>
+          <Assign DisplayName="Capture safetyZone">
+            <Assign.To>[safetyZone]</Assign.To>
+            <Assign.Value>[If(specificContent.ContainsKey("safetyZone"), specificContent("safetyZone").ToString(), "none")]</Assign.Value>
+          </Assign>
+          <Assign DisplayName="Capture suggestedAction">
+            <Assign.To>[suggestedAction]</Assign.To>
+            <Assign.Value>[If(specificContent.ContainsKey("suggestedAction"), specificContent("suggestedAction").ToString(), "PROCEED")]</Assign.Value>
+          </Assign>
+
+          <!-- Log the item summary -->
+          <ui:LogMessage
+            DisplayName="Log dequeued item"
+            Level="Information"
+            Message="[&quot;[QueueProcessor] Dequeued: &quot; &amp; incidentId &amp; &quot; | category=&quot; &amp; category &amp; &quot; | riskScore=&quot; &amp; riskScore &amp; &quot; | hitlRequired=&quot; &amp; hitlRequired &amp; &quot; | route=&quot; &amp; route]" />
+
+          <!-- ── 4b. ROUTING GATEWAY ─────────────────────────────── -->
+          <!--
+            Condition mirrors the Maestro BPMN Gateway_hitl expression:
+              hitlRequired = True  OR  route = "ACTION_CENTER"
+            Either field is sufficient — the analyst sets both consistently
+            but we guard on both for resilience.
+          -->
+          <If DisplayName="HITL Required?"
+              Condition="[hitlRequired = True OrElse route.Equals(&quot;ACTION_CENTER&quot;, StringComparison.OrdinalIgnoreCase)]">
+
+            <!-- ═══════════════════════════════════════════════
+                 HITL BRANCH — Create Action Center task
+                 Action type: ComplianceReviewBoard (QuickForm)
+                 ═══════════════════════════════════════════════ -->
+            <If.Then>
+              <Sequence DisplayName="[HITL] Create Action Center Action">
+
+                <Assign DisplayName="Mark route taken = HITL">
+                  <Assign.To>[out_RouteTaken]</Assign.To>
+                  <Assign.Value>"HITL"</Assign.Value>
+                </Assign>
+
+                <ui:LogMessage
+                  DisplayName="Log HITL routing"
+                  Level="Information"
+                  Message="[&quot;[QueueProcessor] → HITL branch — creating Action Center task for &quot; &amp; incidentId]" />
+
+                <!--
+                  UiPath Activity: UiPath.Persistence.Activities.CreateFormTask
+                  (Action Center External / QuickForm task)
+
+                  The action type "ComplianceReviewBoard" must be registered in
+                  Orchestrator before deployment — see action_type_compliance_review.json
+                  for the registration payload and form schema.
+
+                  IMPORTANT: Action Center tasks CANNOT be created via a bare REST call
+                  against /odata/Tasks; they require a registered action type with a
+                  matching catalog entry.  This activity resolves that internally via
+                  the UiPath.Persistence nuget package (≥ 22.4).
+                -->
+                <ui:CreateFormTask
+                  DisplayName="Create Compliance Review Board Task (Action Center)"
+                  ActionName="[&quot;Compliance Review: &quot; &amp; incidentId &amp; &quot; [&quot; &amp; category &amp; &quot;]&quot;]"
+                  ActionPriority="High"
+                  AssignedToGroup="[in_AssigneeGroup]"
+                  CatalogName="[in_ActionTypeName]"
+                  CatalogVersion="[in_ActionTypeVersion]"
+                  TaskObject="[taskObject]"
+                  TaskData="[New Dictionary(Of String, Object) From {
+                    {&quot;incidentId&quot;,     incidentId},
+                    {&quot;subject&quot;,       subject},
+                    {&quot;severity&quot;,      severity},
+                    {&quot;safetyZone&quot;,    safetyZone},
+                    {&quot;category&quot;,      category},
+                    {&quot;riskScore&quot;,     riskScore},
+                    {&quot;confidence&quot;,    confidence},
+                    {&quot;suggestedAction&quot;, suggestedAction},
+                    {&quot;route&quot;,         route}
+                  }]" />
+
+                <Assign DisplayName="Capture action task ID">
+                  <Assign.To>[actionTaskId]</Assign.To>
+                  <Assign.Value>[taskObject.Id.ToString()]</Assign.Value>
+                </Assign>
+
+                <Assign DisplayName="Write out_ActionTaskId">
+                  <Assign.To>[out_ActionTaskId]</Assign.To>
+                  <Assign.Value>[actionTaskId]</Assign.Value>
+                </Assign>
+
+                <ui:LogMessage
+                  DisplayName="Log action task created"
+                  Level="Information"
+                  Message="[&quot;[QueueProcessor] Action Center task created: &quot; &amp; actionTaskId &amp; &quot; (awaiting human review)&quot;]" />
+
+                <!--
+                  NOTE: We do NOT wait for the human response here.
+                  The Maestro BPMN "Escalate to Review Board" userTask node
+                  owns the wait-for-completion and outcome mapping.
+                  This workflow's responsibility ends at task creation.
+                -->
+
+              </Sequence>
+            </If.Then>
+
+            <!-- ═══════════════════════════════════════════════
+                 FAST TRACK BRANCH — Autonomous resolution
+                 ═══════════════════════════════════════════════ -->
+            <If.Else>
+              <Sequence DisplayName="[Fast Track] Autonomous Resolution">
+
+                <Assign DisplayName="Mark route taken = FAST_TRACK">
+                  <Assign.To>[out_RouteTaken]</Assign.To>
+                  <Assign.Value>"FAST_TRACK"</Assign.Value>
+                </Assign>
+
+                <ui:LogMessage
+                  DisplayName="Log Fast Track routing"
+                  Level="Information"
+                  Message="[&quot;[QueueProcessor] → Fast Track branch — auto-resolving &quot; &amp; incidentId &amp; &quot; (suggestedAction=&quot; &amp; suggestedAction &amp; &quot;)&quot;]" />
+
+                <!--
+                  Autonomous dispatch request body serialization:
+                  Targets the CMMS dispatch API endpoint (ServiceNow shape).
+                -->
+                <ui:HttpClientActivity
+                  DisplayName="POST to Fast-Track Dispatch Endpoint (mock CMMS)"
+                  Endpoint="[Environment.GetEnvironmentVariable(&quot;CMMS_DISPATCH_URL&quot;) ?? &quot;http://localhost:8000/api/dispatch&quot;]"
+                  Method="POST"
+                  Body="[Newtonsoft.Json.JsonConvert.SerializeObject(New Dictionary(Of String, Object) From {
+                    {&quot;incidentId&quot;, incidentId},
+                    {&quot;category&quot;, category},
+                    {&quot;riskScore&quot;, riskScore},
+                    {&quot;action&quot;, suggestedAction},
+                    {&quot;resolvedBy&quot;, &quot;FAST_TRACK_AUTO&quot;},
+                    {&quot;resolvedAt&quot;, DateTime.UtcNow.ToString(&quot;o&quot;)}
+                  })]"
+                  BodyFormat="application/json" />
+
+                <ui:LogMessage
+                  DisplayName="Log Fast Track dispatch complete"
+                  Level="Information"
+                  Message="[&quot;[QueueProcessor] Fast Track dispatch posted for &quot; &amp; incidentId]" />
+
+              </Sequence>
+            </If.Else>
+          </If>
+
+          <!-- ── 4c. Mark transaction Successful ───────────────────── -->
+          <Assign DisplayName="Set txStatus = Successful">
+            <Assign.To>[txStatus]</Assign.To>
+            <Assign.Value>"Successful"</Assign.Value>
+          </Assign>
+
+        </Sequence>
+      </TryCatch.Try>
+
+      <!-- ── Catch: System.Exception ────────────────────────────── -->
+      <TryCatch.Catches>
+        <Catch x:TypeArguments="s:Exception" x:Name="caughtEx">
+          <ActivityAction x:TypeArguments="s:Exception">
+            <ActivityAction.Argument>
+              <DelegateInArgument x:TypeArguments="s:Exception" Name="ex" />
+            </ActivityAction.Argument>
+            <Sequence DisplayName="Handle error">
+              <Assign DisplayName="Capture error message">
+                <Assign.To>[errorMessage]</Assign.To>
+                <Assign.Value>[ex.Message]</Assign.Value>
+              </Assign>
+              <ui:LogMessage
+                DisplayName="Log error"
+                Level="Error"
+                Message="[&quot;[QueueProcessor] Error processing &quot; &amp; incidentId &amp; &quot;: &quot; &amp; errorMessage]" />
+              <!-- txStatus remains "Failed" — set in Finally -->
+            </Sequence>
+          </ActivityAction>
+        </Catch>
+      </TryCatch.Catches>
+
+      <!-- ── Finally: Set Transaction Status ─────────────────────── -->
+      <!--
+        This ALWAYS runs whether success or failure.
+        The Orchestrator queue item transitions:
+          New → InProgress (automatically at GetTransactionItem)
+          InProgress → Successful  (on SetTransactionStatus Successful)
+          InProgress → Failed      (on SetTransactionStatus Failed)
+        Retry logic is configured on the queue definition
+        (MaxNumberOfRetries = 1, AcceptAutomaticallyRetry = False).
+      -->
+      <TryCatch.Finally>
+        <Sequence DisplayName="Set Transaction Status">
+
+          <If DisplayName="Was processing successful?"
+              Condition="[txStatus.Equals(&quot;Successful&quot;)]">
+            <If.Then>
+              <ui:SetTransactionStatus
+                DisplayName="SetTransactionStatus — Successful"
+                TransactionItem="[transactionItem]"
+                Status="Successful"
+                Analytics="[New Dictionary(Of String, Object) From {
+                  {&quot;route&quot;,       out_RouteTaken},
+                  {&quot;actionTaskId&quot;, out_ActionTaskId}
+                }]" />
+            </If.Then>
+            <If.Else>
+              <ui:SetTransactionStatus
+                DisplayName="SetTransactionStatus — Failed"
+                TransactionItem="[transactionItem]"
+                Status="Failed"
+                ErrorType="ApplicationException"
+                ErrorMessage="[errorMessage]" />
+            </If.Else>
+          </If>
+
+          <!-- Push outputs back to the caller (Maestro BPMN) -->
+          <Assign DisplayName="Write out_TransactionStatus">
+            <Assign.To>[out_TransactionStatus]</Assign.To>
+            <Assign.Value>[txStatus]</Assign.Value>
+          </Assign>
+
+          <ui:LogMessage
+            DisplayName="Log final status"
+            Level="Information"
+            Message="[&quot;[QueueProcessor] &quot; &amp; incidentId &amp; &quot; → &quot; &amp; txStatus &amp; &quot; | route=&quot; &amp; out_RouteTaken]" />
+
+        </Sequence>
+      </TryCatch.Finally>
+    </TryCatch>
+  </Sequence>
+</Activity>
