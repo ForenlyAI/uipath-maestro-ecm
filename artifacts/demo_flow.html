@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UiPath Maestro — Incident Queue Triage Demo</title>
+  <!-- Google Fonts: Inter and Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Premium CSS Variables & Reset */
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f111a 0%, #08090d 100%);
+      --panel-bg: rgba(22, 26, 41, 0.7);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-active: rgba(0, 162, 255, 0.4);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --color-primary: #00a2ff;
+      --color-primary-glow: rgba(0, 162, 255, 0.15);
+      --color-success: #10b981;
+      --color-success-glow: rgba(16, 185, 129, 0.15);
+      --color-warning: #f59e0b;
+      --color-warning-glow: rgba(245, 158, 11, 0.15);
+      --color-danger: #ef4444;
+      --color-danger-glow: rgba(239, 68, 68, 0.15);
+      --font-outfit: 'Outfit', sans-serif;
+      --font-inter: 'Inter', sans-serif;
+      --font-mono: 'Fira Code', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      font-family: var(--font-inter);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Layout & Header styling */
+    header {
+      background: rgba(10, 12, 20, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1.25rem 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .uipath-logo {
+      width: 24px;
+      height: 24px;
+      background: #ff5000;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #fff;
+      font-family: var(--font-outfit);
+      font-size: 0.85rem;
+      box-shadow: 0 0 12px rgba(255, 80, 0, 0.4);
+    }
+
+    .header-title h1 {
+      font-family: var(--font-outfit);
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .header-title p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .badge-live {
+      background: var(--color-success-glow);
+      color: var(--color-success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 0.25rem 0.6rem;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-live-dot {
+      width: 6px;
+      height: 6px;
+      background-color: var(--color-success);
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+
+    /* Main Content Dashboard Grid */
+    .dashboard-container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 320px 1fr 400px;
+      gap: 1.5rem;
+      padding: 1.5rem 2.5rem;
+      max-width: 1800px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Section & Cards base styling */
+    .glass-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    }
+
+    .panel-header {
+      padding: 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-header h2 {
+      font-family: var(--font-outfit);
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    /* Left Sidebar: Queue Items */
+    .queue-list {
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      overflow-y: auto;
+      max-height: calc(100vh - 200px);
+    }
+
+    .queue-item {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .queue-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .queue-item.active {
+      background: rgba(0, 162, 255, 0.06);
+      border-color: var(--color-primary);
+      box-shadow: 0 0 15px rgba(0, 162, 255, 0.15);
+    }
+
+    .queue-item-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .queue-item-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.5rem;
+    }
+
+    .queue-item-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.75rem;
+    }
+
+    /* Status Pill Styles */
+    .status-pill {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .status-pill.new {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e5e7eb;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .status-pill.in-progress {
+      background: var(--color-warning-glow);
+      color: var(--color-warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .status-pill.successful {
+      background: var(--color-success-glow);
+      color: var(--color-success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .status-pill.failed {
+      background: var(--color-danger-glow);
+      color: var(--color-danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .route-pill {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      background: rgba(0, 162, 255, 0.1);
+      color: var(--color-primary);
+      border: 1px solid rgba(0, 162, 255, 0.2);
+    }
+
+    .route-pill.hitl {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--color-danger);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    /* Center Section: Process Flow & Active Interactive Panel */
+    .center-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Interactive Process Visualizer Map */
+    .flow-map {
+      padding: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(10, 12, 20, 0.4);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      overflow-x: auto;
+    }
+
+    .flow-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      text-align: center;
+      position: relative;
+      min-width: 100px;
+    }
+
+    .flow-step-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      color: var(--text-muted);
+      transition: all 0.3s ease;
+      z-index: 2;
+    }
+
+    .flow-step.active .flow-step-icon {
+      background: var(--color-primary-glow);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      box-shadow: 0 0 15px rgba(0, 162, 255, 0.3);
+    }
+
+    .flow-step.completed .flow-step-icon {
+      background: var(--color-success-glow);
+      border-color: var(--color-success);
+      color: var(--color-success);
+    }
+
+    .flow-step-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      max-width: 110px;
+    }
+
+    .flow-step.active .flow-step-label {
+      color: #fff;
+    }
+
+    .flow-connector {
+      flex: 1;
+      height: 2px;
+      background: var(--border-color);
+      margin-top: -24px;
+      z-index: 1;
+      min-width: 30px;
+    }
+
+    .flow-connector.active {
+      background: var(--color-primary);
+      box-shadow: 0 0 8px var(--color-primary);
+    }
+
+    /* Main Detail Showcase Panel */
+    .detail-view {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .detail-view-body {
+      flex: 1;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      overflow-y: auto;
+      max-height: calc(100vh - 360px);
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      height: 100%;
+      color: var(--text-muted);
+      padding: 3rem;
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    /* Action Center Form (QuickForm) Layout */
+    .form-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .form-section-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-primary);
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+
+    .readonly-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .readonly-field {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+    }
+
+    .readonly-field.span-2 {
+      grid-column: span 2;
+    }
+
+    .readonly-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-bottom: 0.25rem;
+    }
+
+    .readonly-val {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #fff;
+    }
+
+    .readonly-val.code {
+      font-family: var(--font-mono);
+      color: var(--color-primary);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .form-control {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: #fff;
+      font-family: var(--font-inter);
+      font-size: 0.85rem;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 8px var(--color-primary-glow);
+    }
+
+    select.form-control {
+      cursor: pointer;
+    }
+
+    textarea.form-control {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      margin-top: 1rem;
+    }
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font-outfit);
+      border: none;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-primary {
+      background: var(--color-primary);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0, 162, 255, 0.3);
+    }
+
+    .btn-primary:hover {
+      background: #008be0;
+      box-shadow: 0 4px 16px rgba(0, 162, 255, 0.4);
+    }
+
+    /* Fast Track Execution Simulator Visual */
+    .fast-track-run {
+      background: rgba(16, 185, 129, 0.03);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .console-box {
+      background: #050608;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: #10b981;
+      height: 180px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+
+    .console-line {
+      margin-bottom: 0.25rem;
+    }
+
+    .console-line.info {
+      color: #00a2ff;
+    }
+
+    .console-line.warning {
+      color: #f59e0b;
+    }
+
+    /* Right Sidebar: Queue Details JSON Inspector */
+    .sidebar-right {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .json-inspector {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      background: #050608;
+      border-radius: 0 0 16px 16px;
+      color: #38bdf8;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
+    /* Animations */
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.5; }
+      50% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.5; }
+    }
+
+    .pulse-animation {
+      animation: pulse 2s infinite;
+    }
+
+    /* Alert styles inside Detail Panel */
+    .alert-banner {
+      display: flex;
+      gap: 0.75rem;
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .alert-banner.info {
+      background: var(--color-primary-glow);
+      color: var(--color-primary);
+      border: 1px solid rgba(0, 162, 255, 0.2);
+    }
+
+    .alert-banner.warning {
+      background: var(--color-warning-glow);
+      color: var(--color-warning);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .alert-icon {
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+
+    /* Responsive Grid Adjustments */
+    @media (max-width: 1200px) {
+      .dashboard-container {
+        grid-template-columns: 280px 1fr;
+      }
+      .sidebar-right {
+        grid-column: span 2;
+        max-height: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo-container">
+      <div class="uipath-logo">Ui</div>
+      <div class="header-title">
+        <h1>Orchestrator Queue Triage</h1>
+        <p>Shared / IncidentReports — Robotic Lawn-Mower Fleet Incident Remediation</p>
+      </div>
+    </div>
+    <div style="display: flex; gap: 1rem; align-items: center;">
+      <div class="badge-live">
+        <span class="badge-live-dot"></span>
+        Queue Status: 4 Items Active
+      </div>
+    </div>
+  </header>
+
+  <!-- Dashboard Grid -->
+  <div class="dashboard-container">
+
+    <!-- Left Sidebar: Queue Items -->
+    <div class="glass-panel">
+      <div class="panel-header">
+        <h2>Queue Items (4)</h2>
+        <span style="font-size: 0.7rem; color: var(--text-muted);">Shared Folder</span>
+      </div>
+      <div class="queue-list" id="queueList">
+        <!-- JS will populate these -->
+      </div>
+    </div>
+
+    <!-- Center Section: Process Flow & Action Center Form -->
+    <div class="center-section">
+      
+      <!-- BPMN Progress Visualizer Map -->
+      <div class="flow-map" id="flowMap">
+        <div class="flow-step" id="stepStart">
+          <div class="flow-step-icon">🏁</div>
+          <div class="flow-step-label">Queue Trigger</div>
+        </div>
+        <div class="flow-connector" id="conn1"></div>
+        <div class="flow-step" id="stepDequeue">
+          <div class="flow-step-icon">📥</div>
+          <div class="flow-step-label">Get Transaction</div>
+        </div>
+        <div class="flow-connector" id="conn2"></div>
+        <div class="flow-step" id="stepRoute">
+          <div class="flow-step-icon">🔀</div>
+          <div class="flow-step-label">Evaluate Route</div>
+        </div>
+        <div class="flow-connector" id="conn3"></div>
+        <div class="flow-step" id="stepBranch">
+          <div class="flow-step-icon">⏳</div>
+          <div class="flow-step-label" id="branchLabel">Branch Task</div>
+        </div>
+        <div class="flow-connector" id="conn4"></div>
+        <div class="flow-step" id="stepStatus">
+          <div class="flow-step-icon">💾</div>
+          <div class="flow-step-label">Set Status</div>
+        </div>
+      </div>
+
+      <!-- Main Detail Showcase Panel -->
+      <div class="glass-panel detail-view">
+        <div class="panel-header">
+          <h2 id="detailTitle">Process Intake & Execution</h2>
+          <span class="status-pill new" id="detailStatus">Idle</span>
+        </div>
+        
+        <div class="detail-view-body" id="detailBody">
+          <!-- Empty State by default -->
+          <div class="empty-state">
+            <div class="empty-state-icon">👈</div>
+            <h3>Select a Queue Item to Start Processing</h3>
+            <p style="margin-top: 0.5rem; max-width: 320px; font-size: 0.85rem;">Select an incident report item from the left queue sidebar to execute the Maestro BPMN process flow.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Sidebar: JSON Inspector -->
+    <div class="glass-panel sidebar-right">
+      <div class="panel-header">
+        <h2>Queue Item Payload</h2>
+        <span style="font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono);">SpecificContent</span>
+      </div>
+      <div class="json-inspector" id="jsonInspector">
+// Select a queue item to view raw SpecificContent JSON.
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // 4 Live Queue Items matching samples
+    const queueData = [
+      {
+        id: "item1",
+        reference: "IR-20260607-0001",
+        priority: "High",
+        status: "New", // New, InProgress, Successful
+        route: "ACTION_CENTER",
+        hitlRequired: true,
+        specificContent: {
+          incidentId: "IR-20260607-0001",
+          severity: "high",
+          subject: "BLADE_STRIKE: cutting deck struck a foreign object on a roadside verge, unit MOW-NX3-07",
+          description: "Onboard vision flagged a hard blade strike against a foreign object (suspected metal debris) on a roadside verge. Blade RPM dropped then spiked; deck vibration over threshold. Unit was mowing a near-road verge on route 12.",
+          safetyZone: "near-road",
+          category: "BLADE_FAULT",
+          riskScore: 0.85,
+          confidence: 0.91,
+          suggestedAction: "HOLD",
+          route: "ACTION_CENTER"
+        }
+      },
+      {
+        id: "item2",
+        reference: "IR-20260607-0002",
+        priority: "Normal",
+        status: "New",
+        route: "AUTONOMOUS",
+        hitlRequired: false,
+        specificContent: {
+          incidentId: "IR-20260607-0002",
+          severity: "low",
+          subject: "CHARGING_FAULT: mower charging fault, low voltage contact, unit MOW-NX3-11",
+          description: "Mower attempted charging at docking station 04. Current draw below threshold; docking connectors require cleaning or alignment. Battery level 22%. Transient charge termination.",
+          safetyZone: "none",
+          category: "OPERATIONAL_RISK",
+          riskScore: 0.08,
+          confidence: 0.95,
+          suggestedAction: "PROCEED",
+          route: "AUTONOMOUS"
+        }
+      },
+      {
+        id: "item3",
+        reference: "IR-20260607-0003",
+        priority: "High",
+        status: "New",
+        route: "ACTION_CENTER",
+        hitlRequired: true,
+        specificContent: {
+          incidentId: "IR-20260607-0003",
+          severity: "medium",
+          subject: "BOUNDARY_BREACH: mower boundary breach alert, off-property detection, unit MOW-NX3-02",
+          description: "RTK/GPS telemetry detected boundary transgression. Coordinates show mower position 1.2m outside geofence boundary. RTK coverage degraded. safetyZone: public-access.",
+          safetyZone: "public-access",
+          category: "BOUNDARY_BREACH",
+          riskScore: 0.65,
+          confidence: 0.88,
+          suggestedAction: "HOLD",
+          route: "ACTION_CENTER"
+        }
+      },
+      {
+        id: "item4",
+        reference: "IR-20260607-0004",
+        priority: "Normal",
+        status: "New",
+        route: "AUTONOMOUS",
+        hitlRequired: false,
+        specificContent: {
+          incidentId: "IR-20260607-0004",
+          severity: "low",
+          subject: "MOBILITY_SLOPE: wheel slip on steep slope verge, automatic stall recovery, unit MOW-NX3-09",
+          description: "Wheel slip detected on 24-degree slope verge. IMU sensor reported tilt threshold reached. Slip control active. Mower restarted mowing autonomously on safe path.",
+          safetyZone: "steep-slope",
+          category: "MOBILITY_FAULT",
+          riskScore: 0.12,
+          confidence: 0.82,
+          suggestedAction: "PROCEED",
+          route: "AUTONOMOUS"
+        }
+      }
+    ];
+
+    let currentItem = null;
+
+    // Render Queue Items in Left Sidebar
+    function renderQueue() {
+      const queueList = document.getElementById('queueList');
+      queueList.innerHTML = '';
+      queueData.forEach(item => {
+        const itemEl = document.createElement('div');
+        itemEl.className = `queue-item ${currentItem && currentItem.id === item.id ? 'active' : ''}`;
+        itemEl.onclick = () => selectItem(item);
+        
+        itemEl.innerHTML = `
+          <div class="queue-item-meta">
+            <span>Ref: ${item.reference}</span>
+            <span class="status-pill ${item.status.toLowerCase().replace(' ', '-')}">${item.status}</span>
+          </div>
+          <div class="queue-item-title">${item.specificContent.subject}</div>
+          <div class="queue-item-footer">
+            <span class="status-pill" style="background: rgba(255,255,255,0.05); color: ${item.priority === 'High' ? 'var(--color-danger)' : 'var(--text-muted)'}; font-size: 0.65rem;">
+              Priority: ${item.priority}
+            </span>
+            <span class="route-pill ${item.route.toLowerCase().replace('_', '-')}">${item.route}</span>
+          </div>
+        `;
+        queueList.appendChild(itemEl);
+      });
+    }
+
+    // Select Item from Sidebar
+    function selectItem(item) {
+      currentItem = item;
+      renderQueue();
+      
+      // Update JSON Inspector
+      document.getElementById('jsonInspector').textContent = JSON.stringify(item.specificContent, null, 2);
+      
+      // Update Detail Title and Status
+      document.getElementById('detailTitle').textContent = `Process Incident: ${item.reference}`;
+      const statusPill = document.getElementById('detailStatus');
+      statusPill.className = `status-pill ${item.status.toLowerCase().replace(' ', '-')}`;
+      statusPill.textContent = item.status;
+
+      // Start Flow Steps Visualization Animation
+      runFlowMapAnimation(item);
+    }
+
+    // Interactive Flow Map visual updates
+    function runFlowMapAnimation(item) {
+      // Reset all steps and connectors
+      const steps = ['stepStart', 'stepDequeue', 'stepRoute', 'stepBranch', 'stepStatus'];
+      const conns = ['conn1', 'conn2', 'conn3', 'conn4'];
+      steps.forEach(s => document.getElementById(s).className = 'flow-step');
+      conns.forEach(c => document.getElementById(c).className = 'flow-connector');
+      
+      document.getElementById('branchLabel').textContent = item.route === 'ACTION_CENTER' ? 'Action Center Task' : 'Fast-Track Dispatch';
+
+      // Step 1: Start
+      document.getElementById('stepStart').classList.add('completed');
+      
+      setTimeout(() => {
+        document.getElementById('conn1').classList.add('active');
+        document.getElementById('stepDequeue').classList.add('completed');
+        
+        setTimeout(() => {
+          document.getElementById('conn2').classList.add('active');
+          document.getElementById('stepRoute').classList.add('completed');
+          
+          setTimeout(() => {
+            document.getElementById('conn3').classList.add('active');
+            const branchStep = document.getElementById('stepBranch');
+            branchStep.classList.add('active');
+            
+            // Populate the Main Details Panel based on Route
+            renderMainPanel(item);
+            
+          }, 400);
+        }, 400);
+      }, 400);
+    }
+
+    // Render the Detailed Interactive View for processing
+    function renderMainPanel(item) {
+      const body = document.getElementById('detailBody');
+      body.innerHTML = '';
+
+      if (item.status === 'Successful') {
+        renderSuccessPanel(item, body);
+        return;
+      }
+
+      // Mark the item state as InProgress
+      item.status = 'InProgress';
+      document.getElementById('detailStatus').className = 'status-pill in-progress';
+      document.getElementById('detailStatus').textContent = 'In Progress';
+      renderQueue();
+
+      if (item.route === 'ACTION_CENTER') {
+        renderActionCenterForm(item, body);
+      } else {
+        renderFastTrackConsole(item, body);
+      }
+    }
+
+    // Render Completed State Summary Panel
+    function renderSuccessPanel(item, body) {
+      // Highlight final flow step
+      document.getElementById('stepBranch').className = 'flow-step completed';
+      document.getElementById('conn4').classList.add('active');
+      document.getElementById('stepStatus').className = 'flow-step completed';
+
+      body.innerHTML = `
+        <div class="alert-banner info">
+          <div class="alert-icon">✨</div>
+          <div>
+            <strong>Transaction Item Processing Completed Successfully</strong><br>
+            The incident transaction has been completed and marked as Successful in the Orchestrator Queue.
+          </div>
+        </div>
+        <div class="readonly-grid" style="margin-top: 1rem;">
+          <div class="readonly-field">
+            <div class="readonly-label">Incident ID</div>
+            <div class="readonly-val">${item.reference}</div>
+          </div>
+          <div class="readonly-field">
+            <div class="readonly-label">Disposition / Route</div>
+            <div class="readonly-val">${item.route}</div>
+          </div>
+          <div class="readonly-field">
+            <div class="readonly-label">Queue Final Status</div>
+            <div class="readonly-val" style="color: var(--color-success)">SUCCESSFUL</div>
+          </div>
+          <div class="readonly-field">
+            <div class="readonly-label">Completed At</div>
+            <div class="readonly-val">${new Date().toISOString()}</div>
+          </div>
+          <div class="readonly-field span-2">
+            <div class="readonly-label">Action Outcome Details</div>
+            <div class="readonly-val" style="font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.4;">
+              ${item.route === 'ACTION_CENTER' 
+                ? `[HITL Board Decision Approved]<br>Decision: ${item.formDecision}<br>Reviewer: ${item.formReviewer}<br>Reviewer Notes: "${item.formNotes}"`
+                : `[Autonomous Fast Track Dispatch]<br>Target: mock ServiceNow/CMMS REST API<br>Response: HTTP 200 OK — Remediation Auto-Dispatched`
+              }
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+          <button class="btn btn-secondary" onclick="resetItem('${item.id}')">Reset Item for Re-run</button>
+        </div>
+      `;
+    }
+
+    // Render Action Center Form Simulation (Interactive)
+    function renderActionCenterForm(item, body) {
+      body.innerHTML = `
+        <div class="alert-banner warning">
+          <div class="alert-icon">⚠️</div>
+          <div>
+            <strong>Action Center Human Review Required</strong><br>
+            AI Risk Assessment requires verification: Safety Risk Score is <strong>${item.specificContent.riskScore}</strong> (Threshold >= 0.15).
+          </div>
+        </div>
+        
+        <div class="form-container">
+          <div class="form-section-title">AI Triage Context (Read-Only)</div>
+          <div class="readonly-grid">
+            <div class="readonly-field">
+              <div class="readonly-label">Incident ID</div>
+              <div class="readonly-val">${item.specificContent.incidentId}</div>
+            </div>
+            <div class="readonly-field">
+              <div class="readonly-label">Classification Category</div>
+              <div class="readonly-val">${item.specificContent.category}</div>
+            </div>
+            <div class="readonly-field">
+              <div class="readonly-label">Risk Score</div>
+              <div class="readonly-val">${item.specificContent.riskScore}</div>
+            </div>
+            <div class="readonly-field">
+              <div class="readonly-label">AI Suggested Action</div>
+              <div class="readonly-val">${item.specificContent.suggestedAction}</div>
+            </div>
+            <div class="readonly-field span-2">
+              <div class="readonly-label">Subject</div>
+              <div class="readonly-val">${item.specificContent.subject}</div>
+            </div>
+          </div>
+
+          <div class="form-section-title">Compliance Board Review Decision</div>
+          
+          <div class="form-group">
+            <label class="form-label" for="decisionSelect">Board Decision</label>
+            <select class="form-control" id="decisionSelect" onchange="validateForm()">
+              <option value="">-- Choose Disposition --</option>
+              <option value="APPROVE_REWORK">Approve Rework (Field Repair Service)</option>
+              <option value="APPROVE_SCRAP">Approve Scrap (Decommission Unit)</option>
+              <option value="APPROVE_AUDIT">Approve Audit (Sensor Calibration)</option>
+              <option value="APPROVE_HOLD" selected>Approve Hold (Immediate Lock-Out)</option>
+              <option value="OVERRIDE_TO_PROCEED">Override AI Recommendation -> Proceed</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="notesText">Reviewer Notes / Audit Justification (Min 10 chars)</label>
+            <textarea class="form-control" id="notesText" placeholder="Enter justification notes for compliance audit..." oninput="validateForm()">AI safety risk checks confirm hold required due to ${item.specificContent.category.toLowerCase().replace('_', ' ')}. Lock-out unit.</textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="reviewerName">Reviewer Name (Authorized E-Signature)</label>
+            <input type="text" class="form-control" id="reviewerName" value="Compliance Officer Alice" placeholder="Enter full name..." oninput="validateForm()">
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-secondary" onclick="cancelProcessing('${item.id}')">Cancel</button>
+            <button class="btn btn-primary" id="submitBtn" onclick="submitActionCenter('${item.id}')">Submit Action Center Decision</button>
+          </div>
+        </div>
+      `;
+      validateForm();
+    }
+
+    // Form validation
+    function validateForm() {
+      const decision = document.getElementById('decisionSelect').value;
+      const notes = document.getElementById('notesText').value;
+      const reviewer = document.getElementById('reviewerName').value;
+      const submitBtn = document.getElementById('submitBtn');
+
+      if (decision && notes.length >= 10 && reviewer.length >= 2) {
+        submitBtn.removeAttribute('disabled');
+        submitBtn.style.opacity = '1';
+      } else {
+        submitBtn.setAttribute('disabled', 'true');
+        submitBtn.style.opacity = '0.5';
+      }
+    }
+
+    // Submit Action Center decision
+    function submitActionCenter(itemId) {
+      const item = queueData.find(i => i.id === itemId);
+      item.formDecision = document.getElementById('decisionSelect').value;
+      item.formNotes = document.getElementById('notesText').value;
+      item.formReviewer = document.getElementById('reviewerName').value;
+      item.status = 'Successful';
+
+      // Update flow map status indicator
+      document.getElementById('stepBranch').className = 'flow-step completed';
+      document.getElementById('conn4').classList.add('active');
+      document.getElementById('stepStatus').className = 'flow-step completed';
+
+      // Rerender details
+      selectItem(item);
+    }
+
+    // Render Fast Track Console simulation
+    function renderFastTrackConsole(item, body) {
+      body.innerHTML = `
+        <div class="alert-banner info">
+          <div class="alert-icon">⚡</div>
+          <div>
+            <strong>Fast-Track Autonomous Execution Route</strong><br>
+            AI Risk Score is <strong>${item.specificContent.riskScore}</strong>. Low risk profile, executing autonomous dispatch pipeline.
+          </div>
+        </div>
+        
+        <div class="fast-track-run">
+          <div style="font-size: 0.8rem; font-weight: 600; color: #fff;">Automated Execution Console Output</div>
+          <div class="console-box" id="consoleBox">
+            <div class="console-line info">> Initiating autonomous resolution pipeline for ${item.reference}...</div>
+          </div>
+        </div>
+      `;
+
+      // Simulate console prints
+      const consoleBox = document.getElementById('consoleBox');
+      const lines = [
+        { text: `> Fetching mock CMMS dispatch endpoint configuration...`, delay: 300, type: 'info' },
+        { text: `> POST http://localhost:8000/api/dispatch`, delay: 700, type: 'info' },
+        { text: `> Sending Payload: { incidentId: "${item.reference}", action: "${item.specificContent.suggestedAction}", agent: "Autonomous_FastTrack" }`, delay: 1100, type: 'normal' },
+        { text: `> Connection established. Response received: 200 OK`, delay: 1600, type: 'success' },
+        { text: `> CMMS WorkOrder successfully updated/dispatched.`, delay: 2000, type: 'success' },
+        { text: `> Setting Orchestrator Queue Transaction Status to Successful...`, delay: 2400, type: 'info' },
+        { text: `> Process successfully completed.`, delay: 2800, type: 'success' }
+      ];
+
+      lines.forEach(line => {
+        setTimeout(() => {
+          const div = document.createElement('div');
+          div.className = `console-line ${line.type === 'success' ? '' : line.type}`;
+          div.textContent = line.text;
+          consoleBox.appendChild(div);
+          consoleBox.scrollTop = consoleBox.scrollHeight;
+
+          // On last line, transition item status to Successful
+          if (line === lines[lines.length - 1]) {
+            item.status = 'Successful';
+            setTimeout(() => {
+              selectItem(item);
+            }, 500);
+          }
+        }, line.delay);
+      });
+    }
+
+    // Cancel Processing
+    function cancelProcessing(itemId) {
+      const item = queueData.find(i => i.id === itemId);
+      item.status = 'New';
+      selectItem(item);
+    }
+
+    // Reset Item
+    function resetItem(itemId) {
+      const item = queueData.find(i => i.id === itemId);
+      item.status = 'New';
+      selectItem(item);
+    }
+
+    // Initialize Page
+    renderQueue();
+  </script>
+</body>
+</html>
