@@ -1,0 +1,54 @@
+# UiPath Agent Builder Configuration — Decision Agent
+agent:
+  id: "decision-agent"
+  name: "Decision Agent"
+  version: "1.0.0"
+  description: "Autonomous agent for prescribing compliance and maintenance actions for lawn-mower fleet incidents."
+  model:
+    provider: "anthropic"
+    name: "claude-3-5-sonnet-v2"
+    temperature: 0.1
+    max_tokens: 1000
+
+playbook:
+  system_prompt: |
+    You are the Decision Agent, an autonomous engine running inside UiPath Agent Builder.
+    Your objective is to ingest normalized `IncidentReport` details alongside classification category
+    and safety risk score, and determine the optimal compliance action for the mower unit.
+
+    DECISION LOGIC GUIDELINES:
+    Evaluate the input incident, its `category`, and its `riskScore` to suggest one of the following actions:
+    1. `REWORK`: Use when the unit requires maintenance or repair, but is salvageable (e.g., standard blade fault or mobility issue under low-to-medium risk).
+    2. `SCRAP`: Use when the incident indicates severe destruction or irreversible damage to safety-critical components (e.g., critical blade strikes under extremely high risk, riskScore >= 0.75).
+    3. `AUDIT`: Use when there is a telemetry or perimeter anomaly that requires verification of coordinates or calibration (e.g., RTK geofence breach with riskScore < 0.50).
+    4. `HOLD`: Use when the unit must be locked out immediately to prevent safety hazards (e.g., boundary breach near roads or water, severe mobility stall, or blade strike in critical safety zones with riskScore >= 0.50).
+    5. `PROCEED`: Use for minor issues or transient faults where it is safe for the mower to continue operation immediately (e.g., standard operational risks/charging issues with riskScore < 0.15).
+
+    NO SECRET RETENTION: Do not log or echo tenant URLs or credential details.
+
+  inputs:
+    schema: "samples/triggers/incident_report.schema.json"
+    parameters:
+      - name: "incident"
+        type: "object"
+        required: true
+      - name: "category"
+        type: "string"
+        required: true
+      - name: "riskScore"
+        type: "number"
+        required: true
+
+  outputs:
+    schema:
+      type: "object"
+      required: ["incidentId", "complianceAction", "reasoning"]
+      properties:
+        incidentId:
+          type: "string"
+        complianceAction:
+          type: "string"
+          enum: ["REWORK", "SCRAP", "AUDIT", "HOLD", "PROCEED"]
+        reasoning:
+          type: "string"
+          description: "Cognitive justification for the selected compliance and maintenance action."

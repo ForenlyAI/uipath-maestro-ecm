@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "id": "action-center-review-board",
+  "title": "Decision & Compliance Review Board - Task Template",
+  "description": "Schema establishing form fields, read-only AI compliance recommendations, and final action sign-offs for human review of high-risk robotic lawn-mower fleet incidents in UiPath Action Center.",
+  "type": "object",
+  "required": ["decision", "reviewerNotes", "reviewerName"],
+  "properties": {
+    "readOnlyContext": {
+      "type": "object",
+      "description": "Decision context and AI recommendation shown to the reviewer.",
+      "required": ["incidentId", "category", "riskScore", "aiComplianceAction", "aiReasoning"],
+      "additionalProperties": false,
+      "properties": {
+        "incidentId": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string"
+        },
+        "safetyZone": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["BLADE_FAULT", "MOBILITY_FAULT", "BOUNDARY_BREACH", "OPERATIONAL_RISK"]
+        },
+        "riskScore": {
+          "type": "number"
+        },
+        "aiComplianceAction": {
+          "type": "string",
+          "enum": ["REWORK", "SCRAP", "AUDIT", "HOLD", "PROCEED"]
+        },
+        "aiReasoning": {
+          "type": "string"
+        }
+      }
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["APPROVE_REWORK", "APPROVE_SCRAP", "APPROVE_AUDIT", "APPROVE_HOLD", "APPROVE_PROCEED", "OVERRIDE_TO_PROCEED", "OVERRIDE_TO_HOLD"],
+      "description": "The final Action Center compliance action approved by the human reviewer."
+    },
+    "reviewerNotes": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Mandatory explanation justifying the human review board decision or compliance action override."
+    },
+    "reviewerName": {
+      "type": "string",
+      "description": "Authorized signature of the compliance officer."
+    },
+    "workOrderId": {
+      "type": "string",
+      "pattern": "^WO-[0-9]{4}-[0-9]{4,}$",
+      "description": "Compliance Work Order ID assigned to this action."
+    }
+  }
+}

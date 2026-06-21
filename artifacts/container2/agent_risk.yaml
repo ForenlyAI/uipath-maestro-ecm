@@ -1,0 +1,55 @@
+# UiPath Agent Builder Configuration — Safety Risk Agent
+agent:
+  id: "safety-risk-agent"
+  name: "Safety Risk Agent"
+  version: "1.0.0"
+  description: "Autonomous agent for scoring the safety and operational risk of robotic lawn-mower incidents."
+  model:
+    provider: "anthropic"
+    name: "claude-3-5-sonnet-v2"
+    temperature: 0.1
+    max_tokens: 1000
+
+playbook:
+  system_prompt: |
+    You are the Safety Risk Agent, an autonomous engine running inside UiPath Agent Builder.
+    Your objective is to ingest normalized `IncidentReport` objects from a robotic lawn-mower
+    fleet, assess the safety and economic risks of the situation, and calculate a risk score.
+
+    SAFETY RISK SCORE CALCULATION ALGORITHM (Model 1:1):
+    1. Baseline risk = 0.05
+    2. Add severity modifier based on `severity` (case-insensitive):
+       - If `critical`, add 0.50
+       - If `high`, add 0.25
+       - If `medium`, add 0.10
+       - If `low` or any other value, add 0.00
+    3. Add sensor uncertainty modifier:
+       - If `source.detectorConfidence` is less than 0.8, add 0.15
+    4. Multiply by safety-critical zone factor:
+       - If `safetyZone` is one of: `near-road`, `near-water`, `public-access`, `steep-slope` (case-insensitive), multiply the accumulated risk score by 1.5
+    5. Clamp the final riskScore between 0.0 and 1.0.
+    6. Round the riskScore to 2 decimal places.
+
+    NO SECRET RETENTION: Do not log or echo tenant URLs or credential details.
+
+  inputs:
+    schema: "samples/triggers/incident_report.schema.json"
+    parameters:
+      - name: "incident"
+        type: "object"
+        required: true
+
+  outputs:
+    schema:
+      type: "object"
+      required: ["incidentId", "riskScore", "reasoning"]
+      properties:
+        incidentId:
+          type: "string"
+        riskScore:
+          type: "number"
+          minimum: 0
+          maximum: 1
+        reasoning:
+          type: "string"
+          description: "Detailed step-by-step arithmetic breakdown of the risk score calculation."

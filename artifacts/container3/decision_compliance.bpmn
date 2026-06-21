@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uipath="http://uipath.com/schema/bpmn" id="Definitions_Container3" targetNamespace="http://bpmn.io/schema/bpmn" exporter="UiPath Maestro Modeler" exporterVersion="2026.1.0">
+  <bpmn:collaboration id="Collaboration_Container3">
+    <bpmn:participant id="Participant_DecisionCompliance" name="Container 3 — Decision &amp; Compliance Subprocess" processRef="Process_DecisionCompliance" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_DecisionCompliance" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_Container3">
+      <bpmn:lane id="Lane_DecisionAI" name="Decision Agent (Agent Builder)">
+        <bpmn:flowNodeRef>StartEvent_DecisionTriggered</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_DecisionAgent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_HighRiskCheck</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_HITL" name="Fleet Review Board (Action Center)">
+        <bpmn:flowNodeRef>Task_ActionCenterReview</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_Execution" name="Downstream Automation / CMMS &amp; Audit">
+        <bpmn:flowNodeRef>Task_LogComplianceAudit</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>EndEvent_ComplianceCompleted</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    
+    <!-- Flow Nodes -->
+    <bpmn:startEvent id="StartEvent_DecisionTriggered" name="Decision Subprocess Triggered">
+      <bpmn:outgoing>Flow_To_DecisionAgent</bpmn:outgoing>
+    </bpmn:startEvent>
+    
+    <bpmn:serviceTask id="Task_DecisionAgent" name="Run Decision Agent" uipath:agentRef="agent_decision.yaml">
+      <bpmn:incoming>Flow_To_DecisionAgent</bpmn:incoming>
+      <bpmn:outgoing>Flow_To_Gateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <bpmn:exclusiveGateway id="Gateway_HighRiskCheck" name="Is High Risk? (Risk &gt;= 0.15 OR Action != PROCEED)">
+      <bpmn:incoming>Flow_To_Gateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_HighRiskRoute</bpmn:outgoing>
+      <bpmn:outgoing>Flow_LowRiskRoute</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <bpmn:userTask id="Task_ActionCenterReview" name="Action Center Compliance Review" uipath:taskTemplate="action_center_review_board.json">
+      <bpmn:incoming>Flow_HighRiskRoute</bpmn:incoming>
+      <bpmn:outgoing>Flow_HITLCompleted</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <bpmn:serviceTask id="Task_LogComplianceAudit" name="Record Decision in CMMS &amp; Audit Log" uipath:taskType="CMMSIntegration">
+      <bpmn:incoming>Flow_HITLCompleted</bpmn:incoming>
+      <bpmn:incoming>Flow_LowRiskRoute</bpmn:incoming>
+      <bpmn:outgoing>Flow_To_End</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <bpmn:endEvent id="EndEvent_ComplianceCompleted" name="Compliance and Decision Completed">
+      <bpmn:incoming>Flow_To_End</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <!-- Sequences -->
+    <bpmn:sequenceFlow id="Flow_To_DecisionAgent" sourceRef="StartEvent_DecisionTriggered" targetRef="Task_DecisionAgent" />
+    <bpmn:sequenceFlow id="Flow_To_Gateway" sourceRef="Task_DecisionAgent" targetRef="Gateway_HighRiskCheck" />
+    <bpmn:sequenceFlow id="Flow_HighRiskRoute" name="Yes (HITL)" sourceRef="Gateway_HighRiskCheck" targetRef="Task_ActionCenterReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${riskScore &gt;= 0.15 || complianceAction != 'PROCEED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_LowRiskRoute" name="No (Auto)" sourceRef="Gateway_HighRiskCheck" targetRef="Task_LogComplianceAudit">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${riskScore &lt; 0.15 &amp;&amp; complianceAction == 'PROCEED'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_HITLCompleted" sourceRef="Task_ActionCenterReview" targetRef="Task_LogComplianceAudit" />
+    <bpmn:sequenceFlow id="Flow_To_End" sourceRef="Task_LogComplianceAudit" targetRef="EndEvent_ComplianceCompleted" />
+  </bpmn:process>
+  
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Container3">
+    <bpmndi:BPMNPlane id="BPMNPlane_Container3" bpmnElement="Collaboration_Container3">
+      <bpmndi:BPMNParticipant id="Participant_DecisionCompliance_di" bpmnElement="Participant_DecisionCompliance" isHorizontal="true">
+        <dc:Bounds x="120" y="50" width="1000" height="400" />
+      </bpmndi:BPMNParticipant>
+      
+      <!-- Lanes -->
+      <bpmndi:BPMNLane id="Lane_DecisionAI_di" bpmnElement="Lane_DecisionAI" isHorizontal="true">
+        <dc:Bounds x="150" y="50" width="970" height="150" />
+      </bpmndi:BPMNLane>
+      <bpmndi:BPMNLane id="Lane_HITL_di" bpmnElement="Lane_HITL" isHorizontal="true">
+        <dc:Bounds x="150" y="200" width="970" height="130" />
+      </bpmndi:BPMNLane>
+      <bpmndi:BPMNLane id="Lane_Execution_di" bpmnElement="Lane_Execution" isHorizontal="true">
+        <dc:Bounds x="150" y="330" width="970" height="120" />
+      </bpmndi:BPMNLane>
+      
+      <!-- Shapes -->
+      <bpmndi:BPMNShape id="StartEvent_DecisionTriggered_di" bpmnElement="StartEvent_DecisionTriggered">
+        <dc:Bounds x="190" y="107" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="170" y="150" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <bpmndi:BPMNShape id="Task_DecisionAgent_di" bpmnElement="Task_DecisionAgent">
+        <dc:Bounds x="290" y="85" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <bpmndi:BPMNShape id="Gateway_HighRiskCheck_di" bpmnElement="Gateway_HighRiskCheck" isMarkerVisible="true">
+        <dc:Bounds x="480" y="100" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="464" y="50" width="82" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <bpmndi:BPMNShape id="Task_ActionCenterReview_di" bpmnElement="Task_ActionCenterReview">
+        <dc:Bounds x="600" y="225" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <bpmndi:BPMNShape id="Task_LogComplianceAudit_di" bpmnElement="Task_LogComplianceAudit">
+        <dc:Bounds x="780" y="350" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <bpmndi:BPMNShape id="EndEvent_ComplianceCompleted_di" bpmnElement="EndEvent_ComplianceCompleted">
+        <dc:Bounds x="960" y="372" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="940" y="415" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="Flow_To_DecisionAgent_di" bpmnElement="Flow_To_DecisionAgent">
+        <di:waypoint x="226" y="125" />
+        <di:waypoint x="290" y="125" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_To_Gateway_di" bpmnElement="Flow_To_Gateway">
+        <di:waypoint x="410" y="125" />
+        <di:waypoint x="480" y="125" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_HighRiskRoute_di" bpmnElement="Flow_HighRiskRoute">
+        <di:waypoint x="505" y="150" />
+        <di:waypoint x="505" y="265" />
+        <di:waypoint x="600" y="265" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="522" y="243" width="51" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_LowRiskRoute_di" bpmnElement="Flow_LowRiskRoute">
+        <di:waypoint x="530" y="125" />
+        <di:waypoint x="750" y="125" />
+        <di:waypoint x="750" y="390" />
+        <di:waypoint x="780" y="390" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="755" y="103" width="48" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_HITLCompleted_di" bpmnElement="Flow_HITLCompleted">
+        <di:waypoint x="720" y="265" />
+        <di:waypoint x="750" y="265" />
+        <di:waypoint x="750" y="390" />
+        <di:waypoint x="780" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_To_End_di" bpmnElement="Flow_To_End">
+        <di:waypoint x="900" y="390" />
+        <di:waypoint x="960" y="390" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
