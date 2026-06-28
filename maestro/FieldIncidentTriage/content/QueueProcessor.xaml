@@ -280,11 +280,11 @@
 
                 <!--
                   Autonomous dispatch request body serialization:
-                  Targets the CMMS dispatch API endpoint (ServiceNow shape).
+                  Targets the cloud-ops dispatch API endpoint (REST shape).
                 -->
                 <ui:HttpClientActivity
-                  DisplayName="POST to Fast-Track Dispatch Endpoint (mock CMMS)"
-                  Endpoint="[Environment.GetEnvironmentVariable(&quot;CMMS_DISPATCH_URL&quot;) ?? &quot;http://localhost:8000/api/dispatch&quot;]"
+                  DisplayName="POST to Fast-Track Dispatch Endpoint (mock cloud-ops)"
+                  Endpoint="[Environment.GetEnvironmentVariable(&quot;CLOUDOPS_DISPATCH_URL&quot;) ?? &quot;http://localhost:8000/api/dispatch&quot;]"
                   Method="POST"
                   Body="[Newtonsoft.Json.JsonConvert.SerializeObject(New Dictionary(Of String, Object) From {
                     {&quot;incidentId&quot;, incidentId},

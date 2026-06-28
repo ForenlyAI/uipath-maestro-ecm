@@ -1,9 +1,9 @@
-# UiPath Agent Builder Configuration — Classification Agent
+# UiPath Agent Builder Configuration — Anomaly Classification Agent
 agent:
   id: "classification-agent"
-  name: "Classification Agent"
+  name: "Anomaly Classification Agent"
   version: "1.0.0"
-  description: "Autonomous agent for classifying robotic lawn-mower fleet incident reports into fault categories."
+  description: "Autonomous agent for classifying humanoid RL training-run anomaly reports into anomaly categories."
   model:
     provider: "anthropic"
     name: "claude-3-5-sonnet-v2"
@@ -12,19 +12,19 @@ agent:
 
 playbook:
   system_prompt: |
-    You are the Classification Agent, an autonomous engine running inside UiPath Agent Builder.
-    Your objective is to ingest normalized `IncidentReport` objects from a robotic lawn-mower
-    fleet, analyze the incident details (subject, description, affected items), classify the fault,
-    and output a structured classification payload.
+    You are the Anomaly Classification Agent, an autonomous engine running inside UiPath Agent Builder.
+    Your objective is to ingest normalized `IncidentReport` objects (training-run anomalies) from a
+    humanoid RL training fleet, analyze the details (subject, description, affected items), classify the
+    anomaly, and output a structured classification payload.
 
     CRITICAL RULES:
-    1. CONSTRAINED CATEGORIZATION: Map every fault to exactly one of the following:
-       - `BLADE_FAULT`: Blade strike, blade jam, cutting deck issues, debris in deck.
-       - `MOBILITY_FAULT`: Stall, wheel slip, tilt, rollover, drivetrain issues, motor stall.
-       - `BOUNDARY_BREACH`: Geofence crossing, RTK/GPS drift, perimeter violation, off-property.
-       - `OPERATIONAL_RISK`: Charging, theft, battery, general system or operational status.
+    1. CONSTRAINED CATEGORIZATION: Map every anomaly to exactly one of the following:
+       - `GRADIENT_COLLAPSE`: Reward flatlined/collapsed, gradients vanished, NaN, plateau, no learning.
+       - `LOSS_DIVERGENCE`: Loss diverging, reward crashing, training unstable, exploding loss, oscillation.
+       - `HARDWARE_FAULT`: CUDA OOM, GPU thermal/overheat, throttling, ECC/Xid, instance/node failure.
+       - `RESOURCE_RISK`: Idle spend, quota/budget exhaustion, general operational/cost status.
     2. CONFIDENCE SCORE: Output your confidence score in the classification (0.0 to 1.0).
-       - High confidence (>= 0.8) for clear matches with explicit keywords or telemetry signatures.
+       - High confidence (>= 0.8) for clear matches with explicit keywords or metric signatures.
        - Low confidence (< 0.8) for ambiguous, noisy, or uncertain reports.
     3. NO SECRET RETENTION: Do not log or echo tenant URLs or credential details.
 
@@ -44,7 +44,7 @@ playbook:
           type: "string"
         category:
           type: "string"
-          enum: ["BLADE_FAULT", "MOBILITY_FAULT", "BOUNDARY_BREACH", "OPERATIONAL_RISK"]
+          enum: ["GRADIENT_COLLAPSE", "LOSS_DIVERGENCE", "HARDWARE_FAULT", "RESOURCE_RISK"]
         confidence:
           type: "number"
           minimum: 0

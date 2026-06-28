@@ -14,26 +14,26 @@ import run_pipeline
 
 HIGH_RISK = {
     "incidentId": "IR-TEST-HIGH",
-    "source": {"type": "vision", "detectorConfidence": 0.94},
+    "source": {"type": "telemetry", "detectorConfidence": 0.94},
     "severity": "high",
-    "subject": "Mower stuck on steep slope, drivetrain stalled at 41 deg tilt",
-    "description": "fleet unit bogged on a wet slope; wheels slipping, drivetrain stalled",
-    "safetyZone": "steep-slope",
+    "subject": "Reward curve diverging on walk-gait run, loss spiking at step 41k",
+    "description": "training run unstable; reward crashed and loss diverging on the H100 instance",
+    "safetyZone": "long-running",
 }
 
 LOW_RISK = {
     "incidentId": "IR-TEST-LOW",
     "source": {"type": "manual", "detectorConfidence": 0.99},
     "severity": "low",
-    "subject": "Routine operational note",
-    "description": "minor cosmetic scuff on the housing, no functional impact",
+    "subject": "Routine training note",
+    "description": "minor logging verbosity note, no impact on the run",
     "safetyZone": "none",
 }
 
 
 def test_high_risk_routes_to_hitl():
     disp, _ = analyze(HIGH_RISK)
-    assert disp["category"] == "MOBILITY_FAULT"
+    assert disp["category"] == "LOSS_DIVERGENCE"
     assert disp["hitlRequired"] is True
     assert 0.0 <= disp["riskScore"] <= 1.0
 
@@ -58,7 +58,7 @@ def test_pipeline_end_to_end_and_audit_trail():
         assert r["route"] in ("ACTION_CENTER", "AUTONOMOUS")
         assert r["ticket"].startswith("QA-")
 
-    # Every processed incident leaves an immutable audit trail.
+    # Every processed event leaves an immutable audit trail.
     audit = store.read_audit()
 
     assert any(e["stage"] == "INTAKE" for e in audit)
@@ -67,17 +67,17 @@ def test_pipeline_end_to_end_and_audit_trail():
     assert any(e["stage"] == "ACTION" for e in audit)
 
 
-# ── NEW EDGE-CASE TESTS (Issue #3) ─────────────────────────────────────────
+# -- EDGE-CASE TESTS (Issue #3) ---------------------------------------------
 
 def test_low_confidence_triggers_hitl():
     """Detector confidence < 0.8 adds +0.15 risk AND offline confidence=0.65 (<0.70),
-    so hitlRequired must be True even for a low-severity incident."""
+    so hitlRequired must be True even for a low-severity anomaly."""
     low_conf_incident = {
         "incidentId": "IR-TEST-LOWCONF",
-        "source": {"type": "sensor", "detectorConfidence": 0.55},
+        "source": {"type": "monitor", "detectorConfidence": 0.55},
         "severity": "low",
-        "subject": "Routine check with unreliable sensor reading",
-        "description": "sensor confidence below acceptable threshold during patrol",
+        "subject": "Routine check with an unreliable monitor reading",
+        "description": "monitor confidence below acceptable threshold during the run",
         "safetyZone": "none",
     }
     disp, _ = analyze(low_conf_incident)
@@ -90,7 +90,7 @@ def test_low_confidence_triggers_hitl():
 
 
 def test_missing_fields_do_not_crash():
-    """An incident with only incidentId must produce a schema-valid output without raising."""
+    """An event with only incidentId must produce a schema-valid output without raising."""
     minimal_incident = {"incidentId": "IR-TEST-MINIMAL"}
     disp, _provider = analyze(minimal_incident)
 
@@ -99,41 +99,41 @@ def test_missing_fields_do_not_crash():
     assert isinstance(disp["hitlRequired"], bool)
     assert 0.0 <= disp["riskScore"] <= 1.0
     assert 0.0 <= disp["confidence"] <= 1.0
-    assert disp["category"] in ("BLADE_FAULT", "MOBILITY_FAULT", "BOUNDARY_BREACH", "OPERATIONAL_RISK")
-    assert disp["suggestedAction"] in ("SERVICE", "RECALL", "INSPECT", "HOLD", "PROCEED")
+    assert disp["category"] in ("GRADIENT_COLLAPSE", "LOSS_DIVERGENCE", "HARDWARE_FAULT", "RESOURCE_RISK")
+    assert disp["suggestedAction"] in ("RESTART", "TERMINATE", "INSPECT", "HOLD", "PROCEED")
 
 
-def test_non_regulated_class_defaults_to_operational_risk():
-    """An incident description with no blade/mobility/boundary keywords falls into OPERATIONAL_RISK."""
+def test_unmatched_class_defaults_to_resource_risk():
+    """A description with no gradient/divergence/hardware keywords falls into RESOURCE_RISK."""
     unclassified_incident = {
         "incidentId": "IR-TEST-UNCLASS",
         "source": {"type": "manual", "detectorConfidence": 0.95},
         "severity": "low",
-        "subject": "Software version mismatch notification",
-        "description": "firmware version v2.1 does not match fleet baseline v2.3",
+        "subject": "Config version mismatch notification",
+        "description": "trainer config v2.1 does not match the fleet baseline v2.3",
         "safetyZone": "none",
     }
     disp, _ = analyze(unclassified_incident)
-    assert disp["category"] == "OPERATIONAL_RISK"
-    assert disp["suggestedAction"] in ("SERVICE", "RECALL", "INSPECT", "HOLD", "PROCEED")
-    # Low severity + high confidence + no safety zone → not HITL
+    assert disp["category"] == "RESOURCE_RISK"
+    assert disp["suggestedAction"] in ("RESTART", "TERMINATE", "INSPECT", "HOLD", "PROCEED")
+    # Low severity + high confidence + no critical zone -> not HITL
     assert disp["hitlRequired"] is False
 
 
-def test_critical_severity_in_safety_zone_maxes_risk():
-    """Critical severity + low detectorConfidence + near-road: risk clamped to 1.0, must HITL."""
+def test_critical_severity_in_critical_zone_maxes_risk():
+    """Critical severity + low detectorConfidence + high-cost-gpu: risk clamped to 1.0, must HITL."""
     critical_incident = {
         "incidentId": "IR-TEST-CRITICAL",
-        "source": {"type": "vision", "detectorConfidence": 0.60},
+        "source": {"type": "telemetry", "detectorConfidence": 0.60},
         "severity": "critical",
-        "subject": "Blade jam near road with debris strike",
-        "description": "blade jammed after striking debris near a public road",
-        "safetyZone": "near-road",
+        "subject": "Gradient collapse with NaN loss on an H100",
+        "description": "gradients vanished and NaN loss appeared on the high-cost GPU pool",
+        "safetyZone": "high-cost-gpu",
     }
     disp, _ = analyze(critical_incident)
     assert disp["riskScore"] == 1.0, f"Expected riskScore=1.0 (clamped), got {disp['riskScore']}"
     assert disp["hitlRequired"] is True
-    assert disp["category"] == "BLADE_FAULT"
+    assert disp["category"] == "GRADIENT_COLLAPSE"
 
 
 if __name__ == "__main__":
@@ -143,6 +143,6 @@ if __name__ == "__main__":
     test_pipeline_end_to_end_and_audit_trail()
     test_low_confidence_triggers_hitl()
     test_missing_fields_do_not_crash()
-    test_non_regulated_class_defaults_to_operational_risk()
-    test_critical_severity_in_safety_zone_maxes_risk()
+    test_unmatched_class_defaults_to_resource_risk()
+    test_critical_severity_in_critical_zone_maxes_risk()
     print("all tests passed")

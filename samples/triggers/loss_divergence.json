@@ -1,0 +1,36 @@
+{
+  "incidentId": "IR-20260607-0002",
+  "source": {
+    "type": "telemetry",
+    "name": "reward-monitor",
+    "detectorConfidence": 0.88
+  },
+  "occurredAt": "2026-06-07T09:02:00Z",
+  "severity": "high",
+  "subject": "LOSS_DIVERGENCE: critic loss diverging and reward crashing on a long-running run",
+  "description": "Loss is diverging sharply (a loss spike from 0.3 to 1e4) and the reward crashed; training is unstable on a multi-day long-running job. Suspected learning rate too high after the last schedule step.",
+  "affectedItems": [
+    {
+      "itemId": "job-run-stairs-v3",
+      "itemType": "job",
+      "quantity": 1
+    },
+    {
+      "itemId": "gpu-mi300x-3",
+      "itemType": "gpu",
+      "supplierId": "amd-devcloud",
+      "quantity": 1
+    }
+  ],
+  "safetyZone": "long-running",
+  "reportedBy": {
+    "principalType": "automated-detector",
+    "principalId": "reward-monitor-run-stairs-v3",
+    "displayName": "Reward Monitor @ run-stairs-v3"
+  },
+  "tags": [
+    "divergence",
+    "unstable",
+    "long-running"
+  ]
+}

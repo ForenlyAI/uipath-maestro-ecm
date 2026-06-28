@@ -1,9 +1,9 @@
-# UiPath Agent Builder Configuration — Fleet AI Analyst Agent
+# UiPath Agent Builder Configuration — Telemetry Analyst Agent
 agent:
-  id: "fleet-ai-analyst"
-  name: "Fleet AI Analyst Agent"
+  id: "telemetry-analyst"
+  name: "Telemetry Analyst Agent"
   version: "1.0.0"
-  description: "Autonomous agent for classifying robotic lawn-mower fleet incident reports and assessing safety/economic impact."
+  description: "Autonomous agent for classifying humanoid RL training-run anomaly reports and assessing risk/economic (cloud GPU) impact."
   model:
     provider: "anthropic"
     name: "claude-3-5-sonnet-v2"
@@ -12,22 +12,22 @@ agent:
 
 playbook:
   system_prompt: |
-    You are the Fleet AI Analyst, an autonomous engine running inside UiPath Agent Builder.
-    Your objective is to ingest normalized `IncidentReport` objects from a robotic lawn-mower
-    fleet, analyze the attached telemetry/optical evidence, classify the fault, and output a
-    structured decision payload.
+    You are the Telemetry Analyst, an autonomous engine running inside UiPath Agent Builder.
+    Your objective is to ingest normalized `IncidentReport` objects (training-run anomalies)
+    from a humanoid RL training fleet, analyze the attached reward/loss telemetry and logs,
+    classify the anomaly, and output a structured decision payload.
 
     CRITICAL RULES FOR DECISION MAKING:
-    1. CONSTRAINED CATEGORIZATION: Map every fault to one of: `BLADE_FAULT`, `MOBILITY_FAULT`, `BOUNDARY_BREACH`, `OPERATIONAL_RISK`.
-    2. SAFETY RISK SCORE CALCULATION:
+    1. CONSTRAINED CATEGORIZATION: Map every anomaly to one of: `GRADIENT_COLLAPSE`, `LOSS_DIVERGENCE`, `HARDWARE_FAULT`, `RESOURCE_RISK`.
+    2. ANOMALY RISK SCORE CALCULATION:
        - Baseline risk = 0.05
        - If `severity` is "critical", add 0.50. If "high", add 0.25. If "medium", add 0.10.
-       - If `safetyZone` is a safety-critical zone (near-road, near-water, public-access, steep-slope), multiply risk score by 1.5.
-       - If `detectorConfidence` < 0.8, increase risk by 0.15 (handling sensor uncertainty).
+       - If `safetyZone` is a critical zone (high-cost-gpu, production-bound, public-benchmark, long-running), multiply risk score by 1.5.
+       - If `detectorConfidence` < 0.8, increase risk by 0.15 (handling detector uncertainty).
     3. HUMAN-IN-THE-LOOP (HITL) GATEWAY TRIGGER:
        - You must output an execution 'confidence' score (0.0 to 1.0).
        - If your confidence in the classification is < 0.70 OR if the calculated `riskScore` >= 0.15, flag `hitlRequired: true`.
-       - This forces UiPath Maestro to route to the Fleet Review Board (Action Center).
+       - This forces UiPath Maestro to route to the Researcher Review Board (Action Center).
     4. NO SECRET RETENTION: Do not log or echo tenant URLs or credential details.
 
   inputs:
@@ -46,7 +46,7 @@ playbook:
           type: "string"
         category:
           type: "string"
-          enum: ["BLADE_FAULT", "MOBILITY_FAULT", "BOUNDARY_BREACH", "OPERATIONAL_RISK"]
+          enum: ["GRADIENT_COLLAPSE", "LOSS_DIVERGENCE", "HARDWARE_FAULT", "RESOURCE_RISK"]
         riskScore:
           type: "number"
           minimum: 0
@@ -62,29 +62,29 @@ playbook:
           description: "Step-by-step cognitive deduction details."
         suggestedAction:
           type: "string"
-          enum: ["SERVICE", "RECALL", "INSPECT", "HOLD", "PROCEED"]
+          enum: ["RESTART", "TERMINATE", "INSPECT", "HOLD", "PROCEED"]
 
 examples:
   - input:
       incident:
         incidentId: "IR-20260607-0001"
         source:
-          type: "vision"
-          name: "onboard-cam"
+          type: "telemetry"
+          name: "reward-monitor"
           detectorConfidence: 0.91
         occurredAt: "2026-06-07T08:14:10Z"
         severity: "high"
-        subject: "BLADE_STRIKE: cutting deck struck a foreign object on a roadside verge, unit MOW-NX3-07"
-        description: "Onboard vision flagged a hard blade strike against a foreign object on a near-road verge. Blade RPM dropped then spiked; deck vibration over threshold."
+        subject: "GRADIENT_COLLAPSE: reward flatlined and gradients vanished at step 60k on walk-gait-v2"
+        description: "Reward telemetry shows the policy reward collapsed to baseline and gradient norms vanished toward zero; no learning for 20k steps on an H100 spot instance."
         affectedItems:
-          - itemId: "MOW-NX3-07"
-            itemType: "unit"
-        safetyZone: "near-road"
+          - itemId: "job-walk-gait-v2"
+            itemType: "job"
+        safetyZone: "high-cost-gpu"
     output:
       incidentId: "IR-20260607-0001"
-      category: "BLADE_FAULT"
+      category: "GRADIENT_COLLAPSE"
       riskScore: 0.45
       confidence: 0.92
       hitlRequired: true
-      reasoning: "Classified as BLADE_FAULT with high confidence from onboard vision telemetry. Risk 0.45 (base 0.05 + 0.25 high severity, x1.5 for near-road safety zone), well over the HITL threshold. The unit operated next to a road, so a human must authorize service before the mower resumes."
-      suggestedAction: "SERVICE"
+      reasoning: "Classified as GRADIENT_COLLAPSE with high confidence from reward telemetry. Risk 0.45 (base 0.05 + 0.25 high severity, x1.5 for the high-cost-gpu zone), well over the HITL threshold. The run is on an expensive GPU pool, so a human must authorize a restart before more budget is burned."
+      suggestedAction: "RESTART"

@@ -1,45 +1,45 @@
-"""Fleet AI Analyst — the agentic classification + risk task node.
+"""Telemetry Analyst — the agentic classification + risk task node.
 
 Implements the contract declared in `artifacts/container1/agent_analyst.yaml`:
-given a canonical IncidentReport from a robotic lawn-mower fleet, it returns a
-structured disposition payload (category, riskScore, confidence, hitlRequired,
-reasoning, suggestedAction).
+given a canonical IncidentReport (a training-run anomaly/event) from a humanoid RL
+training fleet, it returns a structured disposition payload (category, riskScore,
+confidence, hitlRequired, reasoning, suggestedAction).
 
 In a UiPath deployment this runs as an **Agent Builder** agent invoked by the
 Maestro BPMN gateway (the *agentic* half of the system). Here it runs as a plain
-task node so the pipeline is runnable and testable locally. The Safety Risk math
+task node so the pipeline is runnable and testable locally. The Anomaly Risk math
 is identical to the BPMN gateway rules (`samples/simulate_gateway.py`) regardless
 of which provider answers.
 """
 from agents.llm_provider import complete_json
 
-# Robotic-mower fleet fault taxonomy.
-CATEGORIES = ["BLADE_FAULT", "MOBILITY_FAULT", "BOUNDARY_BREACH", "OPERATIONAL_RISK"]
-# Dispositions the agent can recommend for a mower.
-ACTIONS = ["SERVICE", "RECALL", "INSPECT", "HOLD", "PROCEED"]
+# Training-run anomaly taxonomy.
+CATEGORIES = ["GRADIENT_COLLAPSE", "LOSS_DIVERGENCE", "HARDWARE_FAULT", "RESOURCE_RISK"]
+# Dispositions the agent can recommend for a run.
+ACTIONS = ["RESTART", "TERMINATE", "INSPECT", "HOLD", "PROCEED"]
 
 # HITL fires if risk crosses this OR classification confidence drops below 0.70.
 RISK_HITL_THRESHOLD = 0.15
 CONFIDENCE_HITL_THRESHOLD = 0.70
 
-# Operating zones that make any incident inherently safety-critical (a mower
-# misbehaving next to a road, water, the public, or on a steep slope can hurt
-# someone or be lost). Read from the IncidentReport `safetyZone` field.
-SAFETY_ZONES = ("near-road", "near-water", "public-access", "steep-slope")
+# Criticality zones that make any anomaly inherently high-stakes (a wrong
+# autonomous call on an expensive GPU pool, a model bound for a physical robot, a
+# published benchmark, or a multi-day run is costly). Read from the `safetyZone`.
+SAFETY_ZONES = ("high-cost-gpu", "production-bound", "public-benchmark", "long-running")
 
-SYSTEM_PROMPT = """You are the Fleet AI Analyst, an autonomous agent inside UiPath Agent Builder.
-Ingest the IncidentReport JSON from a robotic lawn-mower fleet and return ONLY a JSON
-object with these keys:
+SYSTEM_PROMPT = """You are the Telemetry Analyst, an autonomous agent inside UiPath Agent Builder.
+Ingest the IncidentReport JSON (a training-run anomaly/event) from a humanoid RL
+training fleet and return ONLY a JSON object with these keys:
 incidentId, category, riskScore, confidence, hitlRequired, reasoning, suggestedAction.
 
 Rules:
-- category is one of BLADE_FAULT, MOBILITY_FAULT, BOUNDARY_BREACH, OPERATIONAL_RISK.
+- category is one of GRADIENT_COLLAPSE, LOSS_DIVERGENCE, HARDWARE_FAULT, RESOURCE_RISK.
 - riskScore: baseline 0.05; +0.50 critical / +0.25 high / +0.10 medium severity;
-  +0.15 if detectorConfidence < 0.8; x1.5 if safetyZone is a safety-critical zone
-  (near-road, near-water, public-access, steep-slope); clamp 0..1.
+  +0.15 if detectorConfidence < 0.8; x1.5 if safetyZone is a critical zone
+  (high-cost-gpu, production-bound, public-benchmark, long-running); clamp 0..1.
 - confidence is your 0..1 confidence in the classification.
 - hitlRequired is true if riskScore >= 0.15 OR confidence < 0.70.
-- suggestedAction is one of SERVICE, RECALL, INSPECT, HOLD, PROCEED.
+- suggestedAction is one of RESTART, TERMINATE, INSPECT, HOLD, PROCEED.
 - Never echo tenant URLs or credentials."""
 
 
@@ -56,23 +56,25 @@ def _score_offline(incident):
     risk = min(max(risk, 0.0), 1.0)
 
     blob = (incident.get("subject", "") + " " + incident.get("description", "")).lower()
-    if any(w in blob for w in ("blade", "cutting", "deck", "jam", "foreign object", "debris", "strike")):
-        category = "BLADE_FAULT"
-    elif any(w in blob for w in ("stuck", "slope", "tilt", "tip", "wheel", "slip", "traction",
-                                 "drivetrain", "motor", "stall", "rollover", "bogged")):
-        category = "MOBILITY_FAULT"
-    elif any(w in blob for w in ("boundary", "geofence", "off-property", "off property",
-                                 "perimeter", "gps", "drift", "left the property")):
-        category = "BOUNDARY_BREACH"
+    if any(w in blob for w in ("gradient", "collapse", "vanish", "nan", "flatline",
+                               "plateau", "reward collapse", "no learning", "zero gradient")):
+        category = "GRADIENT_COLLAPSE"
+    elif any(w in blob for w in ("diverg", "loss spike", "reward crash", "unstable",
+                                 "oscillat", "exploded", "exploding loss", "blew up")):
+        category = "LOSS_DIVERGENCE"
+    elif any(w in blob for w in ("oom", "out of memory", "cuda", "thermal", "overheat",
+                                 "throttl", "ecc error", "xid", "hardware fault",
+                                 "gpu fault", "instance crash", "node failure")):
+        category = "HARDWARE_FAULT"
     else:
-        category = "OPERATIONAL_RISK"
+        category = "RESOURCE_RISK"
 
     confidence = 0.92 if incident.get("source", {}).get("detectorConfidence", 1.0) >= 0.8 else 0.65
     action = {
-        "BLADE_FAULT": "HOLD" if risk >= 0.5 else "SERVICE",
-        "MOBILITY_FAULT": "RECALL" if risk >= 0.5 else "SERVICE",
-        "BOUNDARY_BREACH": "HOLD",
-        "OPERATIONAL_RISK": "PROCEED",
+        "GRADIENT_COLLAPSE": "HOLD" if risk >= 0.5 else "RESTART",
+        "LOSS_DIVERGENCE": "TERMINATE" if risk >= 0.5 else "RESTART",
+        "HARDWARE_FAULT": "HOLD",
+        "RESOURCE_RISK": "PROCEED",
     }[category]
 
     return {
@@ -91,7 +93,7 @@ def _validate(result, incident):
     """Coerce/guard LLM output so a downstream BPMN node always gets a clean payload."""
     result.setdefault("incidentId", incident.get("incidentId"))
     if result.get("category") not in CATEGORIES:
-        result["category"] = "OPERATIONAL_RISK"
+        result["category"] = "RESOURCE_RISK"
     if result.get("suggestedAction") not in ACTIONS:
         result["suggestedAction"] = "INSPECT"
     result["riskScore"] = min(max(float(result.get("riskScore", 0.0)), 0.0), 1.0)

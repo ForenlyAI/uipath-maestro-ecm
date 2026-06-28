@@ -1,20 +1,20 @@
 # Maestro process — `FieldIncidentTriage`
 
-A UiPath Maestro (BPMN 2.0) process for the **incident-intake** lane of the
-robotic lawn-mower fleet incident lifecycle. It is the live, drawable counterpart of
-`run_pipeline.py`'s triage stage: an incident is captured, scored by the Fleet
-AI Analyst, reviewed, then routed — high-risk / low-confidence cases escalate to
-the **Fleet Review Board via Action Center (HITL)**; the rest take the
+A UiPath Maestro (BPMN 2.0) process for the **anomaly-intake** lane of the
+humanoid RL training-fleet lifecycle. It is the live, drawable counterpart of
+`run_pipeline.py`'s triage stage: a training-run anomaly is captured, scored by the
+Telemetry Analyst, reviewed, then routed — high-risk / low-confidence cases escalate
+to the **Researcher Review Board via Action Center (HITL)**; the rest take the
 **Fast-Track autonomous** path.
 
 ```
-Mower Incident Captured              (e.g. onboard-vision blade-strike)
+Training Anomaly Captured            (e.g. reward-telemetry gradient collapse)
   → AI Triage & Risk Score           (service — agents/analyst_agent.py)
-  → Reproduce Incident
+  → Reproduce / Pull Metrics
   → Analyze Root Cause
-  → Incident Review
-  → Impact Analysis                  (service — agents/impact_agent.py)
-        economic (repair + downtime + inaction risk) + organizational
+  → Anomaly Review
+  → Cost & Impact Analysis           (service — agents/impact_agent.py)
+        economic (idle spend + run loss + inaction risk) + organizational
         (rolesEngaged / orgScope / safetyCritical) -> hitlRequired
   → ◇ HITL Required?                 (routes on IMPACT, not risk alone)
         ├─ true  → Escalate to Review Board (Action Center)  → Escalated
@@ -22,11 +22,11 @@ Mower Incident Captured              (e.g. onboard-vision blade-strike)
 ```
 
 Routing rule: `hitlRequired = analyst-flagged OR economicImpactScore ≥ 0.40 OR
-safetyCritical OR orgScope = FLEET_WIDE`. A costly / safety-critical / fleet-wide
-fault escalates to the Fleet Review Board; a cheap, contained one auto-resolves.
+safetyCritical OR orgScope = FLEET_WIDE`. A costly / production-bound / fleet-wide
+anomaly escalates to the Researcher Review Board; a cheap, contained one auto-resolves.
 
 Adapted from the generic change-trigger pattern (Figure 12, see
-`docs/figure12-source/`) into robotic lawn-mower fleet incident intake.
+`docs/figure12-source/`) into humanoid RL training-fleet anomaly intake.
 
 ## Files
 

@@ -629,7 +629,7 @@
       <div class="uipath-logo">Ui</div>
       <div class="header-title">
         <h1>Orchestrator Queue Triage</h1>
-        <p>Shared / IncidentReports — Robotic Lawn-Mower Fleet Incident Remediation</p>
+        <p>Shared / IncidentReports — Humanoid RL Training-Fleet Anomaly Remediation</p>
       </div>
     </div>
     <div style="display: flex; gap: 1rem; align-items: center;">
@@ -730,13 +730,13 @@
         specificContent: {
           incidentId: "IR-20260607-0001",
           severity: "high",
-          subject: "BLADE_STRIKE: cutting deck struck a foreign object on a roadside verge, unit MOW-NX3-07",
-          description: "Onboard vision flagged a hard blade strike against a foreign object (suspected metal debris) on a roadside verge. Blade RPM dropped then spiked; deck vibration over threshold. Unit was mowing a near-road verge on route 12.",
-          safetyZone: "near-road",
-          category: "BLADE_FAULT",
-          riskScore: 0.85,
-          confidence: 0.91,
-          suggestedAction: "HOLD",
+          subject: "GRADIENT_COLLAPSE: reward flatlined and gradients vanished at step 60k on walk-gait-v2",
+          description: "Reward telemetry shows the policy reward collapsed to baseline and gradient norms vanished toward zero; no learning for 20k steps on an H100 spot instance (high-cost GPU pool).",
+          safetyZone: "high-cost-gpu",
+          category: "GRADIENT_COLLAPSE",
+          riskScore: 0.45,
+          confidence: 0.92,
+          suggestedAction: "RESTART",
           route: "ACTION_CENTER"
         }
       },
@@ -750,12 +750,12 @@
         specificContent: {
           incidentId: "IR-20260607-0002",
           severity: "low",
-          subject: "CHARGING_FAULT: mower charging fault, low voltage contact, unit MOW-NX3-11",
-          description: "Mower attempted charging at docking station 04. Current draw below threshold; docking connectors require cleaning or alignment. Battery level 22%. Transient charge termination.",
+          subject: "Idle GPU spend: instance kept running 40 min after the run finished",
+          description: "A spot instance stayed allocated for ~40 minutes after training completed; minor idle cost and no impact on any run. Recommend automatic teardown to release the resource.",
           safetyZone: "none",
-          category: "OPERATIONAL_RISK",
-          riskScore: 0.08,
-          confidence: 0.95,
+          category: "RESOURCE_RISK",
+          riskScore: 0.05,
+          confidence: 0.92,
           suggestedAction: "PROCEED",
           route: "AUTONOMOUS"
         }
@@ -770,12 +770,12 @@
         specificContent: {
           incidentId: "IR-20260607-0003",
           severity: "medium",
-          subject: "BOUNDARY_BREACH: mower boundary breach alert, off-property detection, unit MOW-NX3-02",
-          description: "RTK/GPS telemetry detected boundary transgression. Coordinates show mower position 1.2m outside geofence boundary. RTK coverage degraded. safetyZone: public-access.",
-          safetyZone: "public-access",
-          category: "BOUNDARY_BREACH",
-          riskScore: 0.65,
-          confidence: 0.88,
+          subject: "HARDWARE_FAULT: CUDA out of memory (OOM) crashed the trainer on a production-bound run",
+          description: "The GPU monitor caught a CUDA out-of-memory error and the training container crashed mid-epoch. The model is production-bound for the physical robot, so the run must be recovered and verified carefully.",
+          safetyZone: "production-bound",
+          category: "HARDWARE_FAULT",
+          riskScore: 0.45,
+          confidence: 0.92,
           suggestedAction: "HOLD",
           route: "ACTION_CENTER"
         }
@@ -790,12 +790,12 @@
         specificContent: {
           incidentId: "IR-20260607-0004",
           severity: "low",
-          subject: "MOBILITY_SLOPE: wheel slip on steep slope verge, automatic stall recovery, unit MOW-NX3-09",
-          description: "Wheel slip detected on 24-degree slope verge. IMU sensor reported tilt threshold reached. Slip control active. Mower restarted mowing autonomously on safe path.",
-          safetyZone: "steep-slope",
-          category: "MOBILITY_FAULT",
-          riskScore: 0.12,
-          confidence: 0.82,
+          subject: "Minor reward wobble auto-recovered on a healthy run",
+          description: "A brief reward wobble was detected and self-corrected; the run is healthy and continued learning autonomously on a low-cost instance.",
+          safetyZone: "none",
+          category: "LOSS_DIVERGENCE",
+          riskScore: 0.05,
+          confidence: 0.92,
           suggestedAction: "PROCEED",
           route: "AUTONOMOUS"
         }
@@ -942,7 +942,7 @@
             <div class="readonly-val" style="font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.4;">
               ${item.route === 'ACTION_CENTER' 
                 ? `[HITL Board Decision Approved]<br>Decision: ${item.formDecision}<br>Reviewer: ${item.formReviewer}<br>Reviewer Notes: "${item.formNotes}"`
-                : `[Autonomous Fast Track Dispatch]<br>Target: mock ServiceNow/CMMS REST API<br>Response: HTTP 200 OK — Remediation Auto-Dispatched`
+                : `[Autonomous Fast Track Dispatch]<br>Target: mock cloud-ops / model-registry REST API<br>Response: HTTP 200 OK — Remediation Auto-Dispatched`
               }
             </div>
           </div>
@@ -960,7 +960,7 @@
           <div class="alert-icon">⚠️</div>
           <div>
             <strong>Action Center Human Review Required</strong><br>
-            AI Risk Assessment requires verification: Safety Risk Score is <strong>${item.specificContent.riskScore}</strong> (Threshold >= 0.15).
+            AI Risk Assessment requires verification: Anomaly Risk Score is <strong>${item.specificContent.riskScore}</strong> (Threshold >= 0.15).
           </div>
         </div>
         
@@ -995,17 +995,17 @@
             <label class="form-label" for="decisionSelect">Board Decision</label>
             <select class="form-control" id="decisionSelect" onchange="validateForm()">
               <option value="">-- Choose Disposition --</option>
-              <option value="APPROVE_REWORK">Approve Rework (Field Repair Service)</option>
-              <option value="APPROVE_SCRAP">Approve Scrap (Decommission Unit)</option>
-              <option value="APPROVE_AUDIT">Approve Audit (Sensor Calibration)</option>
-              <option value="APPROVE_HOLD" selected>Approve Hold (Immediate Lock-Out)</option>
+              <option value="APPROVE_RETUNE">Approve Retune (Adjust Hyperparameters)</option>
+              <option value="APPROVE_DISCARD">Approve Discard (Throw Away Run/Checkpoint)</option>
+              <option value="APPROVE_VALIDATE">Approve Validate (Metrics/Checkpoint Check)</option>
+              <option value="APPROVE_HOLD" selected>Approve Hold (Pause / Quarantine Run)</option>
               <option value="OVERRIDE_TO_PROCEED">Override AI Recommendation -> Proceed</option>
             </select>
           </div>
 
           <div class="form-group">
             <label class="form-label" for="notesText">Reviewer Notes / Audit Justification (Min 10 chars)</label>
-            <textarea class="form-control" id="notesText" placeholder="Enter justification notes for compliance audit..." oninput="validateForm()">AI safety risk checks confirm hold required due to ${item.specificContent.category.toLowerCase().replace('_', ' ')}. Lock-out unit.</textarea>
+            <textarea class="form-control" id="notesText" placeholder="Enter justification notes for compliance audit..." oninput="validateForm()">AI anomaly-risk checks confirm hold required due to ${item.specificContent.category.toLowerCase().replace('_', ' ')}. Pause the run.</textarea>
           </div>
 
           <div class="form-group">
@@ -1077,11 +1077,11 @@
       // Simulate console prints
       const consoleBox = document.getElementById('consoleBox');
       const lines = [
-        { text: `> Fetching mock CMMS dispatch endpoint configuration...`, delay: 300, type: 'info' },
+        { text: `> Fetching mock cloud-ops dispatch endpoint configuration...`, delay: 300, type: 'info' },
         { text: `> POST http://localhost:8000/api/dispatch`, delay: 700, type: 'info' },
         { text: `> Sending Payload: { incidentId: "${item.reference}", action: "${item.specificContent.suggestedAction}", agent: "Autonomous_FastTrack" }`, delay: 1100, type: 'normal' },
         { text: `> Connection established. Response received: 200 OK`, delay: 1600, type: 'success' },
-        { text: `> CMMS WorkOrder successfully updated/dispatched.`, delay: 2000, type: 'success' },
+        { text: `> Run ticket / WorkOrder successfully updated.`, delay: 2000, type: 'success' },
         { text: `> Setting Orchestrator Queue Transaction Status to Successful...`, delay: 2400, type: 'info' },
         { text: `> Process successfully completed.`, delay: 2800, type: 'success' }
       ];

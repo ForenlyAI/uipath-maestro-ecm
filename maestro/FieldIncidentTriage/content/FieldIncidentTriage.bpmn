@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="FieldIncidentTriage-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="forenly/uipath-maestro-ecm" exporterVersion="1.1">
   <bpmn:process id="Process_FieldIncidentTriage" name="Field Incident Triage" isExecutable="true">
-    <bpmn:documentation>Robotic lawn-mower fleet queue-driven incident triage. Dequeues an incident from the IncidentReports queue in the Shared folder, reads SpecificContent.hitlRequired and route, then branches to either the Compliance Review Board via Action Center (HITL) or the autonomous Fast Track, and sets the transaction status (Successful/Failed) at the end.</bpmn:documentation>
+    <bpmn:documentation>Humanoid RL training-fleet queue-driven anomaly triage. Dequeues a training-run event from the IncidentReports queue in the Shared folder, reads SpecificContent.hitlRequired and route, then branches to either the Compliance Review Board via Action Center (HITL) or the autonomous Fast Track, and sets the transaction status (Successful/Failed) at the end.</bpmn:documentation>
     
     <bpmn:extensionElements>
       <uipath:variables version="v1">
@@ -42,7 +42,7 @@
 
     <!-- User Task (HITL branch): Action Center Compliance Review -->
     <bpmn:userTask id="Activity_actioncenter" name="Compliance Review Board (Action Center)" uipath:taskTemplate="action_type_compliance_review.json">
-      <bpmn:documentation>Creates an Action Center action of type ComplianceReviewBoard. Human reviews the telemetry and safety risk, and makes a final decision.</bpmn:documentation>
+      <bpmn:documentation>Creates an Action Center action of type ComplianceReviewBoard. Researcher reviews the telemetry and anomaly risk, and makes a final decision.</bpmn:documentation>
       <bpmn:incoming>edge_gateway-actioncenter</bpmn:incoming>
       <bpmn:outgoing>edge_actioncenter-setsuccess</bpmn:outgoing>
     </bpmn:userTask>

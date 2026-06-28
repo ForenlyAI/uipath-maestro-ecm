@@ -1,19 +1,22 @@
-"""In-memory enterprise systems store — standard library only.
+"""In-memory cloud-ops systems store — standard library only.
 
-This is the swappable QA-ticket / CRM / audit task node behind the BPMN action
-stage. Keeping it dependency-free means `run_pipeline.py` runs end-to-end with the
-stdlib alone; `enterprise_api.py` puts a FastAPI/HTTP face on the same functions for
-a live demo. In production these calls go to ServiceNow / SAP / a compliance audit
-service through UiPath connectors.
+This is the swappable run-ticket / cloud-provider registry / audit task node behind
+the BPMN action stage. Keeping it dependency-free means `run_pipeline.py` runs
+end-to-end with the stdlib alone; `enterprise_api.py` puts a FastAPI/HTTP face on the
+same functions for a live demo. In production these calls go to the cloud providers'
+billing/quota APIs, a model registry, and a compliance audit service through UiPath
+connectors.
 """
 
 _TICKETS: list[dict] = []
 _AUDIT: list[dict] = []
+# Cloud-provider accounts (the "suppliers" of GPU capacity). tier = priority/discount
+# tier; openIssues = open quota/billing/reliability issues on that account.
 _SUPPLIERS = {
-    "sup-acme-001": {"supplierId": "sup-acme-001", "name": "ACME Assemblies", "tier": "A", "openNCRs": 2},
-    "sup-globex-002": {"supplierId": "sup-globex-002", "name": "Globex Components", "tier": "B", "openNCRs": 5},
-    "sup-techparts-003": {"supplierId": "sup-techparts-003", "name": "TechParts Industries", "tier": "A", "openNCRs": 0},
-    "sup-primecut-004": {"supplierId": "sup-primecut-004", "name": "PrimeCut Robotics", "tier": "C", "openNCRs": 12},
+    "aws-us-east-1":   {"supplierId": "aws-us-east-1",   "name": "AWS Spot (us-east-1, H100)",        "tier": "A", "openIssues": 2},
+    "gcp-us-central1": {"supplierId": "gcp-us-central1", "name": "GCP (us-central1, A100/L4)",         "tier": "B", "openIssues": 1},
+    "amd-devcloud":    {"supplierId": "amd-devcloud",    "name": "AMD Developer Cloud (MI300X)",       "tier": "A", "openIssues": 0},
+    "azure-ncv3":      {"supplierId": "azure-ncv3",      "name": "Azure NCv3 (V100)",                  "tier": "C", "openIssues": 4},
 }
 
 
@@ -21,7 +24,7 @@ def get_supplier(supplier_id):
     return _SUPPLIERS.get(supplier_id)
 
 
-def open_ticket(incident_id, category, suggested_action, risk_score, assigned_to="qa-queue",
+def open_ticket(incident_id, category, suggested_action, risk_score, assigned_to="run-queue",
                 supplier_context=None):
     record = {
         "ticketId": f"QA-{len(_TICKETS) + 1:05d}",

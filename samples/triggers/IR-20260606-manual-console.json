@@ -1,0 +1,21 @@
+{
+  "incidentId": "IR-20260606-0011",
+  "source": {
+    "type": "manual",
+    "name": "researcher-console",
+    "detectorConfidence": 1.0
+  },
+  "occurredAt": "2026-06-06T15:10:00Z",
+  "severity": "low",
+  "subject": "Reward plateau noticed by a researcher on a walk-gait run",
+  "description": "A researcher flagged via the console that the reward has plateaued for ~10k steps and the gradients look small. Wants a sanity check before letting the run continue.",
+  "reportedBy": {
+    "principalType": "human",
+    "principalId": "researcher-42",
+    "displayName": "Researcher (console)"
+  },
+  "tags": [
+    "plateau",
+    "manual"
+  ]
+}

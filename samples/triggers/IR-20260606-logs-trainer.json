@@ -1,0 +1,21 @@
+{
+  "incidentId": "IR-20260606-0012",
+  "source": {
+    "type": "logs",
+    "name": "trainer-stdout",
+    "detectorConfidence": 0.86
+  },
+  "occurredAt": "2026-06-06T16:40:00Z",
+  "severity": "medium",
+  "subject": "NaN loss detected in the trainer logs",
+  "description": "Training logs show NaN loss appearing intermittently \u2014 possible gradient explosion. The run continues but the metrics are unreliable until this is resolved.",
+  "reportedBy": {
+    "principalType": "automated-detector",
+    "principalId": "trainer-stdout",
+    "displayName": "Trainer Logs"
+  },
+  "tags": [
+    "nan",
+    "logs"
+  ]
+}

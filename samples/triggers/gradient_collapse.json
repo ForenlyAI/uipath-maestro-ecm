@@ -1,0 +1,44 @@
+{
+  "incidentId": "IR-20260607-0001",
+  "source": {
+    "type": "telemetry",
+    "name": "reward-monitor",
+    "detectorConfidence": 0.91
+  },
+  "occurredAt": "2026-06-07T08:14:10Z",
+  "severity": "high",
+  "subject": "GRADIENT_COLLAPSE: reward flatlined and gradients vanished at step 60k on walk-gait-v2",
+  "description": "Reward telemetry shows the policy reward collapsed to its baseline and gradient norms vanished toward zero \u2014 no learning for the last 20k steps on an H100 spot instance. The run is on the high-cost GPU pool, so wasted hours are expensive.",
+  "affectedItems": [
+    {
+      "itemId": "job-walk-gait-v2",
+      "itemType": "job",
+      "quantity": 1
+    },
+    {
+      "itemId": "gpu-h100-07",
+      "itemType": "gpu",
+      "supplierId": "aws-us-east-1",
+      "quantity": 1
+    }
+  ],
+  "safetyZone": "high-cost-gpu",
+  "evidence": [
+    {
+      "kind": "image",
+      "uri": "s3://training-evidence/2026-06-07/IR-20260607-0001/reward_curve.png",
+      "caption": "Reward curve flatlined at baseline"
+    }
+  ],
+  "reportedBy": {
+    "principalType": "automated-detector",
+    "principalId": "reward-monitor-walk-gait-v2",
+    "displayName": "Reward Monitor @ walk-gait-v2"
+  },
+  "tags": [
+    "gradient",
+    "collapse",
+    "high-cost-gpu",
+    "walk-gait-v2"
+  ]
+}

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uipath="http://uipath.com/schema/bpmn" id="Definitions_Container2" targetNamespace="http://bpmn.io/schema/bpmn" exporter="UiPath Maestro Modeler" exporterVersion="2026.1.0">
   <bpmn:collaboration id="Collaboration_Container2">
-    <bpmn:participant id="Participant_AnalysisRouting" name="Container 2 — Analysis &amp; Safety Routing Subprocess" processRef="Process_AnalysisRouting" />
+    <bpmn:participant id="Participant_AnalysisRouting" name="Container 2 — Analysis &amp; Risk Routing Subprocess" processRef="Process_AnalysisRouting" />
   </bpmn:collaboration>
   <bpmn:process id="Process_AnalysisRouting" isExecutable="true">
     <bpmn:laneSet id="LaneSet_Container2">
@@ -11,11 +11,11 @@
       <bpmn:lane id="Lane_ClassificationAI" name="Classification Agent (Agent Builder)">
         <bpmn:flowNodeRef>Task_ClassificationAgent</bpmn:flowNodeRef>
       </bpmn:lane>
-      <bpmn:lane id="Lane_RiskAI" name="Safety Risk Agent (Agent Builder)">
+      <bpmn:lane id="Lane_RiskAI" name="Anomaly Risk Agent (Agent Builder)">
         <bpmn:flowNodeRef>Task_RiskAgent</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Gateway_FastTrackCheck</bpmn:flowNodeRef>
       </bpmn:lane>
-      <bpmn:lane id="Lane_Routing" name="Safety Routing Gateways">
+      <bpmn:lane id="Lane_Routing" name="Risk Routing Gateways">
         <bpmn:flowNodeRef>EndEvent_FastTrackApproved</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_HITLRequired</bpmn:flowNodeRef>
       </bpmn:lane>
@@ -31,7 +31,7 @@
       <bpmn:outgoing>Flow_To_Risk</bpmn:outgoing>
     </bpmn:serviceTask>
     
-    <bpmn:serviceTask id="Task_RiskAgent" name="Assess Safety Risk (Risk Agent)" uipath:agentRef="agent_risk.yaml">
+    <bpmn:serviceTask id="Task_RiskAgent" name="Assess Anomaly Risk (Risk Agent)" uipath:agentRef="agent_risk.yaml">
       <bpmn:incoming>Flow_To_Risk</bpmn:incoming>
       <bpmn:outgoing>Flow_To_Gateway</bpmn:outgoing>
     </bpmn:serviceTask>

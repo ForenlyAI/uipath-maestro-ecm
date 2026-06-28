@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""End-to-end local orchestration of the mower-fleet incident BPMN flow.
+"""End-to-end local orchestration of the training-fleet anomaly BPMN flow.
 
 This is the runnable proof that the orchestration actually runs (see
 docs/ARCHITECTURE.md — "the orchestration is meant to actually run"). It chains the
 same stages the UiPath Maestro BPMN models, as plain Python task nodes:
 
-    trigger (IncidentReport)
-      -> Fleet AI Analyst agent      (classify + Safety Risk score)
-      -> Agentic Fast-Track gateway   (HITL required?  -> Action Center : autonomous)
-      -> Action stage                 (open QA ticket via mock enterprise API)
+    trigger (IncidentReport / training-run anomaly)
+      -> Telemetry Analyst agent      (classify + Anomaly Risk score)
+      -> Agentic Fast-Track gateway    (HITL required?  -> Action Center : autonomous)
+      -> Action stage                  (open a run ticket via mock cloud-ops API)
       -> Immutable audit log
 
 Usage:
-    python run_pipeline.py                                  # run all sample triggers
-    python run_pipeline.py samples/triggers/mower_blade_strike.json
+    python run_pipeline.py                                   # run all sample triggers
+    python run_pipeline.py samples/triggers/loss_divergence.json
 """
 import glob
 import json
@@ -32,16 +32,16 @@ def process(incident):
     print(f"\n=== {iid} :: {incident.get('subject', '')[:64]}")
     _audit(iid, "INTAKE", "orchestrator", f"severity={incident.get('severity')}")
 
-    # Stage 1-3: Fleet AI Analyst (classification + Safety Risk Agent)
+    # Stage 1-3: Telemetry Analyst (classification + Anomaly Risk Agent)
     disp, provider = analyze(incident)
     print(f"  analyst [{provider}] -> {disp['category']} "
           f"risk={disp['riskScore']} conf={disp['confidence']} action={disp['suggestedAction']}")
-    _audit(iid, "ANALYSIS", "fleet-ai-analyst",
+    _audit(iid, "ANALYSIS", "telemetry-analyst",
            f"{disp['category']} risk={disp['riskScore']} action={disp['suggestedAction']}")
 
     # Stage: Agentic Fast-Track gateway
     if disp["hitlRequired"]:
-        print("  gateway -> HITL: routed to Fleet Review Board (Action Center)")
+        print("  gateway -> HITL: routed to Researcher Review Board (Action Center)")
         _audit(iid, "GATEWAY", "fast-track-gateway", "HITL required -> Action Center")
         route = "ACTION_CENTER"
     else:
@@ -49,8 +49,8 @@ def process(incident):
         _audit(iid, "GATEWAY", "fast-track-gateway", "low risk -> autonomous fast track")
         route = "AUTONOMOUS"
 
-    # Stage: Action — open a remediation ticket in the (mock) enterprise system
-    # CRM supplier-impact lookup: enrich context with supplier tier / openNCRs.
+    # Stage: Action — open a remediation ticket in the (mock) cloud-ops system.
+    # Cloud-provider impact lookup: enrich context with provider tier / open issues.
     supplier_context = {}
     affected_items = incident.get("affectedItems", [])
     for item in affected_items:
@@ -61,20 +61,20 @@ def process(incident):
                 supplier_context[sid] = {
                     "name": supplier["name"],
                     "tier": supplier["tier"],
-                    "openNCRs": supplier["openNCRs"],
+                    "openIssues": supplier["openIssues"],
                 }
-                print(f"  crm     -> supplier {sid} ({supplier['name']}) "
-                      f"tier={supplier['tier']} openNCRs={supplier['openNCRs']}")
+                print(f"  cloud   -> provider {sid} ({supplier['name']}) "
+                      f"tier={supplier['tier']} openIssues={supplier['openIssues']}")
             else:
-                print(f"  crm     -> supplier {sid} not found in CRM")
+                print(f"  cloud   -> provider {sid} not found in registry")
 
     ticket = store.open_ticket(
         iid, disp["category"], disp["suggestedAction"], disp["riskScore"],
-        assigned_to="compliance-board" if route == "ACTION_CENTER" else "auto-remediation",
+        assigned_to="review-board" if route == "ACTION_CENTER" else "auto-remediation",
         supplier_context=supplier_context,
     )
     print(f"  action  -> {ticket['ticketId']} ({ticket['status']}, owner={ticket['assignedTo']})")
-    _audit(iid, "ACTION", "enterprise-api", f"opened {ticket['ticketId']} -> {ticket['assignedTo']}")
+    _audit(iid, "ACTION", "cloud-ops-api", f"opened {ticket['ticketId']} -> {ticket['assignedTo']}")
 
     return {"incidentId": iid, "route": route, "ticket": ticket["ticketId"], **disp}
 
@@ -88,7 +88,7 @@ def main(paths):
             results.append(process(json.load(fh)))
 
     hitl = sum(1 for r in results if r["route"] == "ACTION_CENTER")
-    print(f"\n--- processed {len(results)} incident(s): {hitl} routed to HITL, "
+    print(f"\n--- processed {len(results)} anomaly event(s): {hitl} routed to HITL, "
           f"{len(results) - hitl} autonomous fast-track ---")
     return results
 

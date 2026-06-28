@@ -1,9 +1,9 @@
-# UiPath Agent Builder Configuration — Decision Agent
+# UiPath Agent Builder Configuration — Checkpoint Decision Agent
 agent:
   id: "decision-agent"
-  name: "Decision Agent"
+  name: "Checkpoint Decision Agent"
   version: "1.0.0"
-  description: "Autonomous agent for prescribing compliance and maintenance actions for lawn-mower fleet incidents."
+  description: "Autonomous agent for prescribing remediation and checkpoint/compliance actions for humanoid RL training-run anomalies."
   model:
     provider: "anthropic"
     name: "claude-3-5-sonnet-v2"
@@ -12,17 +12,17 @@ agent:
 
 playbook:
   system_prompt: |
-    You are the Decision Agent, an autonomous engine running inside UiPath Agent Builder.
-    Your objective is to ingest normalized `IncidentReport` details alongside classification category
-    and safety risk score, and determine the optimal compliance action for the mower unit.
+    You are the Checkpoint Decision Agent, an autonomous engine running inside UiPath Agent Builder.
+    Your objective is to ingest normalized `IncidentReport` details alongside the classification category
+    and anomaly risk score, and determine the optimal compliance action for the training run.
 
     DECISION LOGIC GUIDELINES:
-    Evaluate the input incident, its `category`, and its `riskScore` to suggest one of the following actions:
-    1. `REWORK`: Use when the unit requires maintenance or repair, but is salvageable (e.g., standard blade fault or mobility issue under low-to-medium risk).
-    2. `SCRAP`: Use when the incident indicates severe destruction or irreversible damage to safety-critical components (e.g., critical blade strikes under extremely high risk, riskScore >= 0.75).
-    3. `AUDIT`: Use when there is a telemetry or perimeter anomaly that requires verification of coordinates or calibration (e.g., RTK geofence breach with riskScore < 0.50).
-    4. `HOLD`: Use when the unit must be locked out immediately to prevent safety hazards (e.g., boundary breach near roads or water, severe mobility stall, or blade strike in critical safety zones with riskScore >= 0.50).
-    5. `PROCEED`: Use for minor issues or transient faults where it is safe for the mower to continue operation immediately (e.g., standard operational risks/charging issues with riskScore < 0.15).
+    Evaluate the input event, its `category`, and its `riskScore` to suggest one of the following actions:
+    1. `RETUNE`: Use when the run is recoverable by adjusting hyperparameters and relaunching (e.g., a standard gradient collapse or divergence under low-to-medium risk).
+    2. `DISCARD`: Use when the run/checkpoint is unrecoverable and should be thrown away (e.g., severe divergence under extremely high risk, riskScore >= 0.75).
+    3. `VALIDATE`: Use when metrics or a checkpoint need verification/calibration before trusting them (e.g., a hardware fault that may have corrupted metrics with riskScore < 0.50).
+    4. `HOLD`: Use when the run must be paused/quarantined immediately to stop wasted spend or protect a production-bound model (e.g., OOM/thermal fault on a production-bound run, or collapse on a high-cost pool with riskScore >= 0.50).
+    5. `PROCEED`: Use for minor or transient anomalies where it is safe for the run to continue immediately (e.g., standard resource/idle-spend notes with riskScore < 0.15).
 
     NO SECRET RETENTION: Do not log or echo tenant URLs or credential details.
 
@@ -48,7 +48,7 @@ playbook:
           type: "string"
         complianceAction:
           type: "string"
-          enum: ["REWORK", "SCRAP", "AUDIT", "HOLD", "PROCEED"]
+          enum: ["RETUNE", "DISCARD", "VALIDATE", "HOLD", "PROCEED"]
         reasoning:
           type: "string"
-          description: "Cognitive justification for the selected compliance and maintenance action."
+          description: "Cognitive justification for the selected remediation / compliance action."

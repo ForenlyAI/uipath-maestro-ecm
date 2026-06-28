@@ -31,15 +31,15 @@ export UIPATH_CLIENT_ID=<app-id>
 export UIPATH_CLIENT_SECRET=<app-secret>
 ```
 
-## 4. Push incidents into the live queue
+## 4. Push anomalies into the live queue
 
 ```bash
 python integrations/push_incidents.py
 ```
 
 This creates the `IncidentReports` queue (if missing) and enqueues each sample
-incident with its analyst triage as `SpecificContent`. Check **Orchestrator → Queues
-→ IncidentReports** in the cloud UI.
+training-run anomaly with its analyst triage as `SpecificContent`. Check
+**Orchestrator → Queues → IncidentReports** in the cloud UI.
 
 ## Gotchas
 

@@ -1,0 +1,36 @@
+{
+  "incidentId": "IR-20260607-0003",
+  "source": {
+    "type": "monitor",
+    "name": "gpu-smi",
+    "detectorConfidence": 0.95
+  },
+  "occurredAt": "2026-06-07T10:20:30Z",
+  "severity": "high",
+  "subject": "HARDWARE_FAULT: CUDA out of memory (OOM) crashed the trainer on a production-bound run",
+  "description": "The GPU monitor caught a CUDA out-of-memory error and the training container crashed mid-epoch. This model is production-bound for the physical robot, so the run must be recovered and verified carefully before any redeploy.",
+  "affectedItems": [
+    {
+      "itemId": "job-grasp-v1",
+      "itemType": "job",
+      "quantity": 1
+    },
+    {
+      "itemId": "gpu-h100-02",
+      "itemType": "gpu",
+      "supplierId": "aws-us-east-1",
+      "quantity": 1
+    }
+  ],
+  "safetyZone": "production-bound",
+  "reportedBy": {
+    "principalType": "automated-detector",
+    "principalId": "gpu-smi-h100-02",
+    "displayName": "GPU Monitor @ h100-02"
+  },
+  "tags": [
+    "oom",
+    "cuda",
+    "production-bound"
+  ]
+}

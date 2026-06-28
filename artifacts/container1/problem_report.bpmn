@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:uipath="http://uipath.com/schema/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="UiPath Maestro Modeler" exporterVersion="2026.1.0">
   <bpmn:collaboration id="Collaboration_1">
-    <bpmn:participant id="Participant_Sentinel" name="Sentinel Enterprise - Fleet Incident Change & Anomaly Orchestration Remediation Orchestration" processRef="Process_IncidentIntake" />
+    <bpmn:participant id="Participant_Sentinel" name="Sentinel Enterprise - Training-Run Anomaly Triage and Remediation Orchestration" processRef="Process_IncidentIntake" />
   </bpmn:collaboration>
   <bpmn:process id="Process_IncidentIntake" isExecutable="true">
     <bpmn:laneSet id="LaneSet_0">
@@ -9,15 +9,15 @@
         <bpmn:flowNodeRef>StartEvent_AnomalyDetected</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_NormalizeIncident</bpmn:flowNodeRef>
       </bpmn:lane>
-      <bpmn:lane id="Lane_VisionAI" name="Fleet AI Analyst (Agent Builder)">
+      <bpmn:lane id="Lane_VisionAI" name="Telemetry Analyst (Agent Builder)">
         <bpmn:flowNodeRef>Task_AIAnalyzeClassify</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_EvaluateRiskScore</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Gateway_RiskAndConfidence</bpmn:flowNodeRef>
       </bpmn:lane>
-      <bpmn:lane id="Lane_HITL" name="Fleet Review Board (Action Center)">
+      <bpmn:lane id="Lane_HITL" name="Researcher Review Board (Action Center)">
         <bpmn:flowNodeRef>Task_HITLComplianceReview</bpmn:flowNodeRef>
       </bpmn:lane>
-      <bpmn:lane id="Lane_Execution" name="Downstream Automation (RPA / CMMS)">
+      <bpmn:lane id="Lane_Execution" name="Downstream Automation (RPA / Cloud APIs)">
         <bpmn:flowNodeRef>Task_AutoDispatchRemediation</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Task_LogCMMSAndAudit</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_ProcessCompleted</bpmn:flowNodeRef>
@@ -34,7 +34,7 @@
       <bpmn:outgoing>Flow_2</bpmn:outgoing>
     </bpmn:serviceTask>
     
-    <bpmn:serviceTask id="Task_AIAnalyzeClassify" name="Run Vision AI Classification Agent" uipath:agentRef="agent_analyst.yaml">
+    <bpmn:serviceTask id="Task_AIAnalyzeClassify" name="Run Telemetry Anomaly Classification Agent" uipath:agentRef="agent_analyst.yaml">
       <bpmn:incoming>Flow_2</bpmn:incoming>
       <bpmn:outgoing>Flow_3</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -55,12 +55,12 @@
       <bpmn:outgoing>Flow_HITLCompleted</bpmn:outgoing>
     </bpmn:userTask>
     
-    <bpmn:serviceTask id="Task_AutoDispatchRemediation" name="Fast Track: Auto-Dispatch Robotic Repair" uipath:taskType="RobotDispatch">
+    <bpmn:serviceTask id="Task_AutoDispatchRemediation" name="Fast Track: Auto-Resume / Auto-Remediate Run" uipath:taskType="RobotDispatch">
       <bpmn:incoming>Flow_FastTrack</bpmn:incoming>
       <bpmn:outgoing>Flow_AutoCompleted</bpmn:outgoing>
     </bpmn:serviceTask>
     
-    <bpmn:serviceTask id="Task_LogCMMSAndAudit" name="Record CMMS Ticket &amp; Write Audit Log" uipath:taskType="CMMSIntegration">
+    <bpmn:serviceTask id="Task_LogCMMSAndAudit" name="Record Run Ticket &amp; Write Audit Log" uipath:taskType="CloudOpsIntegration">
       <bpmn:incoming>Flow_HITLCompleted</bpmn:incoming>
       <bpmn:incoming>Flow_AutoCompleted</bpmn:incoming>
       <bpmn:outgoing>Flow_End</bpmn:outgoing>
@@ -147,7 +147,7 @@
         <dc:Bounds x="730" y="465" width="120" height="80" />
       </bpmndi:BPMNShape>
       
-      <!-- Record CMMS and write Audit Log -->
+      <!-- Record run ticket and write Audit Log -->
       <bpmndi:BPMNShape id="Task_LogCMMSAndAudit_di" bpmnElement="Task_LogCMMSAndAudit">
         <dc:Bounds x="920" y="465" width="120" height="80" />
       </bpmndi:BPMNShape>

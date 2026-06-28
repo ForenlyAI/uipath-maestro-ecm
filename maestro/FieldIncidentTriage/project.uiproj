@@ -1,6 +1,6 @@
 {
   "ProjectType": "ProcessOrchestration",
   "Name": "FieldIncidentTriage",
-  "Description": "Robotic lawn-mower fleet incident triage (Maestro BPMN).",
+  "Description": "Humanoid RL training-fleet anomaly triage (Maestro BPMN).",
   "MainFile": null
 }

@@ -1,0 +1,30 @@
+{
+  "incidentId": "IR-20260607-0005",
+  "source": {
+    "type": "monitor",
+    "name": "quota-monitor",
+    "detectorConfidence": 0.9
+  },
+  "occurredAt": "2026-06-07T12:30:00Z",
+  "severity": "medium",
+  "subject": "Cloud GPU quota nearly exhausted on the training project",
+  "description": "The monitor reports the AWS H100 quota is 95% consumed; new training jobs will start queueing. Operational and budget risk only \u2014 no active run has failed.",
+  "affectedItems": [
+    {
+      "itemId": "aws-us-east-1",
+      "itemType": "account",
+      "supplierId": "aws-us-east-1",
+      "quantity": 1
+    }
+  ],
+  "safetyZone": "none",
+  "reportedBy": {
+    "principalType": "service-account",
+    "principalId": "quota-monitor",
+    "displayName": "Quota Monitor"
+  },
+  "tags": [
+    "quota",
+    "budget"
+  ]
+}

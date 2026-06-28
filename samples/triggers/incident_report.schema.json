@@ -2,38 +2,38 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Forenly/uipath-maestro-ecm/blob/main/samples/triggers/incident_report.schema.json",
   "title": "IncidentReport",
-  "description": "Canonical shape consumed by Container 1 (Problem Report) for a robotic lawn-mower fleet. Every trigger source — onboard vision, mower telemetry, a fixed sensor, or a field-operator handheld portal — normalizes its input to this shape before entering the BPMN. The Fleet AI Analyst agent, IRB Action Center HITL, and downstream containers all read this object.",
+  "description": "Canonical shape consumed by Container 1 (Anomaly Intake) for a humanoid RL training fleet. Every source — live reward/loss telemetry, container training logs, a hardware monitor (GPU/thermal/quota), or a researcher console — normalizes its input to this shape before entering the BPMN. The Telemetry Analyst agent, the Researcher Review Board Action Center HITL, and downstream containers all read this object. One record = one training-run anomaly/event.",
   "type": "object",
   "required": ["incidentId", "source", "occurredAt", "severity", "subject", "description"],
   "additionalProperties": false,
   "properties": {
     "incidentId": {
       "type": "string",
-      "description": "Stable identifier assigned by the trigger adapter. Format: `IR-{YYYYMMDD}-{seq}` recommended.",
+      "description": "Stable identifier assigned by the source adapter. Format: `IR-{YYYYMMDD}-{seq}` recommended (IR = Incident Report / run event).",
       "pattern": "^IR-[0-9]{8}-[0-9]{4,}$",
       "examples": ["IR-20260520-0001"]
     },
     "source": {
       "type": "object",
-      "description": "Where the incident originated.",
+      "description": "Where the anomaly event originated.",
       "required": ["type", "name"],
       "additionalProperties": false,
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["vision", "sensor", "telemetry", "manual"],
-          "description": "Trigger source category. Determines which adapter normalized the input. `vision`=onboard camera/AI, `sensor`=onboard IMU/lidar/bump, `telemetry`=fleet platform event, `manual`=field-operator handheld portal."
+          "enum": ["telemetry", "logs", "monitor", "manual"],
+          "description": "Source category. Determines which adapter normalized the input. `telemetry`=live reward/loss metric stream, `logs`=container/training stdout logs, `monitor`=hardware monitor (GPU utilization/thermal/quota/billing), `manual`=researcher console/form."
         },
         "name": {
           "type": "string",
-          "description": "Specific provider/system name.",
-          "examples": ["onboard-cam", "imu-tilt", "navimow-fleet", "operator-handheld"]
+          "description": "Specific monitor/system name.",
+          "examples": ["reward-monitor", "trainer-stdout", "gpu-smi", "researcher-console"]
         },
         "detectorConfidence": {
           "type": "number",
           "minimum": 0,
           "maximum": 1,
-          "description": "When applicable (vision, automated detectors), the source's confidence score. Used by the Risk Agent's Fast Track gateway. Omit or set to 1.0 for manual/deterministic sources."
+          "description": "When applicable (automated detectors), the source's confidence score. Used by the Risk Agent's Fast Track gateway. Omit or set to 1.0 for manual/deterministic sources."
         }
       }
     },
@@ -45,22 +45,22 @@
     "severity": {
       "type": "string",
       "enum": ["info", "low", "medium", "high", "critical"],
-      "description": "Initial severity tag from the trigger source. The Risk Agent may revise this in Container 3."
+      "description": "Initial severity tag from the source. The Risk Agent may revise this in Container 3."
     },
     "subject": {
       "type": "string",
       "minLength": 3,
       "maxLength": 200,
-      "description": "Short human-readable headline (e.g., `BLADE_JAM: foreign object in cutting deck, unit MOW-07`)."
+      "description": "Short human-readable headline (e.g., `LOSS_DIVERGENCE: critic loss diverging on run walk-gait-v2`)."
     },
     "description": {
       "type": "string",
       "minLength": 10,
-      "description": "Free-form details supplied by the source. May include error codes, observed measurements (tilt angle, GPS drift), comparison to spec, attached evidence URIs."
+      "description": "Free-form details supplied by the source. May include error codes, observed measurements (reward, loss, gradient norm, GPU temperature), comparison to a healthy baseline, attached evidence URIs."
     },
     "affectedItems": {
       "type": "array",
-      "description": "Fleet units / parts implicated by the incident. Drives supplier & parts impact analysis in Container 4.",
+      "description": "Training jobs / GPU instances / cloud accounts implicated by the anomaly. Drives cloud-provider & cost impact analysis in Container 4.",
       "items": {
         "type": "object",
         "required": ["itemId", "itemType"],
@@ -68,34 +68,34 @@
         "properties": {
           "itemId": {
             "type": "string",
-            "description": "Mower unit id, part number, or module id.",
-            "examples": ["MOW-NX3-07", "BLADE-DECK-21", "RTK-MODULE-3"]
+            "description": "Training job id, GPU instance id, cluster id, or cloud account id.",
+            "examples": ["job-walk-gait-v2", "gpu-h100-07", "amd-mi300x-3"]
           },
           "itemType": {
             "type": "string",
-            "enum": ["unit", "part", "assembly", "module", "bom-line"]
+            "enum": ["instance", "job", "gpu", "cluster", "account"]
           },
           "supplierId": {
             "type": "string",
-            "description": "Optional supplier identifier; populated when a part is sourced externally.",
-            "examples": ["sup-segway-emea-217", "sup-blades-acme-001"]
+            "description": "Optional cloud-provider / account identifier; populated when a resource is sourced from a specific provider.",
+            "examples": ["aws-us-east-1", "gcp-us-central1", "amd-devcloud"]
           },
           "quantity": {
             "type": "number",
             "minimum": 0,
-            "description": "Affected quantity or count of units in the affected batch."
+            "description": "Affected quantity or count of instances/jobs in the affected batch."
           }
         }
       }
     },
     "safetyZone": {
       "type": "string",
-      "enum": ["none", "near-road", "near-water", "public-access", "steep-slope", "other"],
-      "description": "Operating zone of the mower when the incident occurred. Safety-critical zones (near-road, near-water, public-access, steep-slope) bias the Risk Agent toward Full Track / human review (a mower misbehaving here can hurt someone or be lost)."
+      "enum": ["none", "high-cost-gpu", "production-bound", "public-benchmark", "long-running", "other"],
+      "description": "Criticality zone of the run when the anomaly occurred. Critical zones (high-cost-gpu, production-bound, public-benchmark, long-running) bias the Risk Agent toward Full Track / human review — wasted spend, a model headed for a physical robot, a published benchmark, or a multi-day run all raise the stakes of a wrong autonomous call."
     },
     "evidence": {
       "type": "array",
-      "description": "Supporting evidence URIs (onboard captures, telemetry logs, operator photos).",
+      "description": "Supporting evidence URIs (reward-curve captures, log excerpts, GPU dashboards).",
       "items": {
         "type": "object",
         "required": ["kind", "uri"],
@@ -119,7 +119,7 @@
     },
     "reportedBy": {
       "type": "object",
-      "description": "Human or system that filed the incident (the `Requestor` role in the framework).",
+      "description": "Human or system that filed the event (the `Requestor` role in the framework).",
       "required": ["principalType", "principalId"],
       "additionalProperties": false,
       "properties": {
@@ -138,13 +138,13 @@
     },
     "tags": {
       "type": "array",
-      "description": "Free-form tags used by the Analyst agent for clustering related incidents.",
+      "description": "Free-form tags used by the Analyst agent for clustering related events.",
       "items": { "type": "string" },
-      "examples": [["blade", "near-road", "route-12"]]
+      "examples": [["gradient", "high-cost-gpu", "walk-gait-v2"]]
     },
     "vendor": {
       "type": "object",
-      "description": "Trigger-source-specific raw payload, preserved verbatim for audit. Adapters MUST NOT mutate; downstream agents may consult.",
+      "description": "Source-specific raw payload, preserved verbatim for audit. Adapters MUST NOT mutate; downstream agents may consult.",
       "additionalProperties": true
     }
   }

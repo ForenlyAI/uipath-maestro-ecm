@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "id": "action-center-review-board",
   "title": "Decision & Compliance Review Board - Task Template",
-  "description": "Schema establishing form fields, read-only AI compliance recommendations, and final action sign-offs for human review of high-risk robotic lawn-mower fleet incidents in UiPath Action Center.",
+  "description": "Schema establishing form fields, read-only AI compliance recommendations, and final action sign-offs for human review of high-risk humanoid RL training-run anomalies in UiPath Action Center.",
   "type": "object",
   "required": ["decision", "reviewerNotes", "reviewerName"],
   "properties": {
@@ -29,14 +29,14 @@
         },
         "category": {
           "type": "string",
-          "enum": ["BLADE_FAULT", "MOBILITY_FAULT", "BOUNDARY_BREACH", "OPERATIONAL_RISK"]
+          "enum": ["GRADIENT_COLLAPSE", "LOSS_DIVERGENCE", "HARDWARE_FAULT", "RESOURCE_RISK"]
         },
         "riskScore": {
           "type": "number"
         },
         "aiComplianceAction": {
           "type": "string",
-          "enum": ["REWORK", "SCRAP", "AUDIT", "HOLD", "PROCEED"]
+          "enum": ["RETUNE", "DISCARD", "VALIDATE", "HOLD", "PROCEED"]
         },
         "aiReasoning": {
           "type": "string"
@@ -45,7 +45,7 @@
     },
     "decision": {
       "type": "string",
-      "enum": ["APPROVE_REWORK", "APPROVE_SCRAP", "APPROVE_AUDIT", "APPROVE_HOLD", "APPROVE_PROCEED", "OVERRIDE_TO_PROCEED", "OVERRIDE_TO_HOLD"],
+      "enum": ["APPROVE_RETUNE", "APPROVE_DISCARD", "APPROVE_VALIDATE", "APPROVE_HOLD", "APPROVE_PROCEED", "OVERRIDE_TO_PROCEED", "OVERRIDE_TO_HOLD"],
       "description": "The final Action Center compliance action approved by the human reviewer."
     },
     "reviewerNotes": {

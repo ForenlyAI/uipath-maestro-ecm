@@ -45,9 +45,9 @@ The diagram renders and routes as-is. Steps 2–7 make it **executable**.
 ## Step 2 — Bind the agentic task nodes (Agent Builder)
 
 - [ ] **`AI Triage and Risk Score`** service task → a published **Agent Builder** agent
-      (the *Fleet AI Analyst*), spec = `artifacts/container1/agent_analyst.yaml`
-      (categories BLADE/MOBILITY/BOUNDARY/OPERATIONAL; risk x1.5 on safety zones; HITL flag).
-- [ ] **`Impact Analysis (Economic + Organizational)`** → an agent / API Workflow mirroring
+      (the *Telemetry Analyst*), spec = `artifacts/container1/agent_analyst.yaml`
+      (categories GRADIENT_COLLAPSE/LOSS_DIVERGENCE/HARDWARE_FAULT/RESOURCE_RISK; risk x1.5 on critical zones; HITL flag).
+- [ ] **`Cost & Impact Analysis`** → an agent / API Workflow mirroring
       `agents/impact_agent.py` (economic score + safetyCritical + orgScope → route).
 
 > LangChain/CrewAI wrappers are allowed, but **UiPath must be the orchestration layer** (rule).
@@ -61,8 +61,8 @@ The diagram renders and routes as-is. Steps 2–7 make it **executable**.
 
 - [ ] **`Escalate to Review Board (Action Center)`** → a **real Action Center action**
       (External-app task or QuickForm) using the fields in `action_center_irb.json`
-      (read-only AI context + decision enum `APPROVE_SERVICE/RECALL_UNIT/INITIATE_INSPECTION/HOLD_UNIT/OVERRIDE_TO_PROCEED` + reviewerNotes + reviewerName).
-- [ ] Assign to the **Fleet Review Board** queue/role.
+      (read-only AI context + decision enum `APPROVE_RESTART/TERMINATE_RUN/INITIATE_INSPECTION/HOLD_RUN/OVERRIDE_TO_PROCEED` + reviewerNotes + reviewerName).
+- [ ] Assign to the **Researcher Review Board** queue/role.
 
 > Gotcha: Action Center tasks need a **registered action type** — a bare
 > `GenericTasks/CreateTask` won't work; model the action in the process.
@@ -76,17 +76,17 @@ The diagram renders and routes as-is. Steps 2–7 make it **executable**.
 ## Step 6 — RPA write-back (the RPA pillar)
 
 - [ ] **`Fast-Track Auto-Resolve`** and the post-approval path → an **RPA Robot** / API
-      Workflow that records the outcome in the (mock) fleet **CMMS / warranty portal**.
+      Workflow that records the outcome in the (mock) **cloud console / billing / model registry**.
       For the demo, point at `mocks/enterprise_api.py` (`uvicorn mocks.enterprise_api:app --port 8099`)
-      or a stub. This is where UiPath's **RPA** strength shows (writing into a system with no clean API).
+      or a stub. This is where UiPath's **RPA** strength shows (driving a cloud console / SSH with no clean API).
 
 ## Step 7 — Publish & run end-to-end on the cloud
 
 - [ ] **Publish** the Maestro process.
-- [ ] Push fresh incidents: `python integrations/push_incidents.py` (env from GSM, folder 116151).
+- [ ] Push fresh anomalies: `python integrations/push_incidents.py` (env from GSM, folder 116151).
 - [ ] In **Orchestrator → Jobs** (the Overview screen): confirm a `FieldIncidentTriage` **Job runs**.
 - [ ] A high-risk item → an **Action Center task** appears → **approve it** → job completes.
-- [ ] A low-risk item (e.g. `mower_charging_fault.json`) → **auto-resolves** (no human gate).
+- [ ] A low-risk item (e.g. `idle_spend.json`) → **auto-resolves** (no human gate).
 - [ ] Capture the **demo URL + screenshots** for Devpost.
 
 ---

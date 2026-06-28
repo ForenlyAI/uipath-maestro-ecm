@@ -1,0 +1,31 @@
+{
+  "incidentId": "IR-20260607-0004",
+  "source": {
+    "type": "telemetry",
+    "name": "billing-monitor",
+    "detectorConfidence": 0.99
+  },
+  "occurredAt": "2026-06-07T11:45:00Z",
+  "severity": "low",
+  "subject": "Idle GPU spend: instance kept running 40 min after the run finished",
+  "description": "A spot instance stayed allocated for ~40 minutes after training completed; minor idle cost and no impact on any run. Recommend automatic teardown to release the resource.",
+  "affectedItems": [
+    {
+      "itemId": "gpu-l4-11",
+      "itemType": "gpu",
+      "supplierId": "gcp-us-central1",
+      "quantity": 1
+    }
+  ],
+  "safetyZone": "none",
+  "reportedBy": {
+    "principalType": "service-account",
+    "principalId": "billing-monitor",
+    "displayName": "Billing Monitor"
+  },
+  "tags": [
+    "idle",
+    "cost",
+    "teardown"
+  ]
+}

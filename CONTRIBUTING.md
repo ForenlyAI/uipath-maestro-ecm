@@ -1,8 +1,8 @@
 # Contributing
 
-Contributions are welcome. This is an open-source framework for running robotic
-lawn-mower fleet incident triage & remediation as an agentic, human-in-the-loop
-workflow on UiPath Maestro BPMN.
+Contributions are welcome. This is an open-source framework for running a cloud-GPU orchestrator
+and humanoid RL training lifecycle manager as an agentic, human-in-the-loop workflow on UiPath
+Maestro BPMN.
 
 ## Where to start
 

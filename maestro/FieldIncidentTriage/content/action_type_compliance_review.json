@@ -4,7 +4,7 @@
   "name": "ComplianceReviewBoard",
   "version": 1,
   "displayName": "Compliance Review Board",
-  "description": "Human-in-the-loop review task presented to the Fleet Review Board / Compliance Officers when the Safety Risk Agent flags hitlRequired=true or route=ACTION_CENTER. Reviewer sees full AI triage context and chooses a compliance disposition.",
+  "description": "Human-in-the-loop review task presented to the Researcher Review Board / approvers when the Anomaly Risk Agent flags hitlRequired=true or route=ACTION_CENTER. The researcher sees the full AI triage context and chooses a remediation disposition.",
   "type": "ExternalTask",
   "formType": "QuickForm",
   "icon": "ShieldAlert",
@@ -19,7 +19,7 @@
   "form": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "Compliance Review Board — Incident Triage Decision",
-    "description": "Review the AI triage output and select the authorised compliance disposition for the mower unit.",
+    "description": "Review the AI triage output and select the authorised remediation disposition for the training run.",
     "type": "object",
     "required": ["decision", "reviewerNotes", "reviewerName"],
 
@@ -36,11 +36,11 @@
           "subject":         { "type": "string",  "title": "Incident Subject" },
           "severity":        { "type": "string",  "title": "Severity",
                                "enum": ["low","medium","high","critical"] },
-          "safetyZone":      { "type": "string",  "title": "Safety Zone" },
+          "safetyZone":      { "type": "string",  "title": "Criticality Zone" },
           "category": {
             "type": "string",
-            "title": "AI Fault Category",
-            "enum": ["BLADE_FAULT","MOBILITY_FAULT","BOUNDARY_BREACH","OPERATIONAL_RISK"]
+            "title": "AI Anomaly Category",
+            "enum": ["GRADIENT_COLLAPSE","LOSS_DIVERGENCE","HARDWARE_FAULT","RESOURCE_RISK"]
           },
           "riskScore": {
             "type": "number",  "title": "Risk Score (0–1)",
@@ -53,7 +53,7 @@
           "suggestedAction": {
             "type": "string",
             "title": "AI Suggested Action",
-            "enum": ["REWORK","SCRAP","AUDIT","HOLD","PROCEED"]
+            "enum": ["RESTART","TERMINATE","INSPECT","HOLD","PROCEED"]
           },
           "route": {
             "type": "string",
@@ -69,20 +69,20 @@
         "description": "Authorised disposition. OVERRIDE_* actions require a minimum 30-character justification in Reviewer Notes.",
         "uiOrder": 1,
         "enum": [
-          "APPROVE_REWORK",
-          "APPROVE_SCRAP",
-          "APPROVE_AUDIT",
+          "APPROVE_RETUNE",
+          "APPROVE_DISCARD",
+          "APPROVE_VALIDATE",
           "APPROVE_HOLD",
           "APPROVE_PROCEED",
           "OVERRIDE_TO_PROCEED",
           "OVERRIDE_TO_HOLD"
         ],
         "enumTitles": [
-          "Approve — Rework (field repair)",
-          "Approve — Scrap (unit decommission)",
-          "Approve — Audit (telemetry/calibration check)",
-          "Approve — Hold (lock-out, pending safety review)",
-          "Approve — Proceed (safe to continue operation)",
+          "Approve — Retune (adjust hyperparameters & relaunch)",
+          "Approve — Discard (throw away the run/checkpoint)",
+          "Approve — Validate (metrics/checkpoint verification)",
+          "Approve — Hold (pause/quarantine, pending review)",
+          "Approve — Proceed (safe to continue training)",
           "Override AI → Proceed (reviewer overrides HITL flag)",
           "Override AI → Hold (reviewer escalates beyond AI recommendation)"
         ]
@@ -120,9 +120,9 @@
     "description": "Maps each form 'decision' value to the downstream BPMN variable complianceOutcome read by the Maestro gateway after Action Center completion.",
     "field": "decision",
     "outcomes": {
-      "APPROVE_REWORK":      { "bpmnVar": "complianceOutcome", "value": "REWORK",   "closeTask": true  },
-      "APPROVE_SCRAP":       { "bpmnVar": "complianceOutcome", "value": "SCRAP",    "closeTask": true  },
-      "APPROVE_AUDIT":       { "bpmnVar": "complianceOutcome", "value": "AUDIT",    "closeTask": true  },
+      "APPROVE_RETUNE":     { "bpmnVar": "complianceOutcome", "value": "RETUNE",   "closeTask": true  },
+      "APPROVE_DISCARD":    { "bpmnVar": "complianceOutcome", "value": "DISCARD",  "closeTask": true  },
+      "APPROVE_VALIDATE":   { "bpmnVar": "complianceOutcome", "value": "VALIDATE", "closeTask": true  },
       "APPROVE_HOLD":        { "bpmnVar": "complianceOutcome", "value": "HOLD",     "closeTask": true  },
       "APPROVE_PROCEED":     { "bpmnVar": "complianceOutcome", "value": "PROCEED",  "closeTask": true  },
       "OVERRIDE_TO_PROCEED": { "bpmnVar": "complianceOutcome", "value": "PROCEED",  "closeTask": true, "auditFlag": "OVERRIDE" },

@@ -6,7 +6,7 @@ Extends ``integrations/orchestrator_client.py`` with a runnable consumer that:
 1. Calls ``get_next_item(queue_name)`` (StartTransaction) to atomically pop a
    New queue item from UiPath Orchestrator.
 2. Extracts the ``SpecificContent`` field (the canonical IncidentReport payload).
-3. Runs the Fleet AI Analyst (``agents.analyst_agent.analyze``) on the incident.
+3. Runs the Telemetry Analyst (``agents.analyst_agent.analyze``) on the event.
 4. Marks the item ``Successful`` with the disposition as output, or ``Failed``
    with the error reason if anything goes wrong.
 

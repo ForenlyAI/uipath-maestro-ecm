@@ -1,0 +1,23 @@
+{
+  "incidentId": "IR-20260606-0013",
+  "source": {
+    "type": "monitor",
+    "name": "gpu-smi",
+    "detectorConfidence": 0.93
+  },
+  "occurredAt": "2026-06-06T17:55:00Z",
+  "severity": "high",
+  "subject": "GPU thermal throttling / overheat on a training node",
+  "description": "The hardware monitor reports a sustained 92C and thermal throttling on the GPU during training; throughput dropped sharply. Possible cooling or hardware fault on the node.",
+  "safetyZone": "none",
+  "reportedBy": {
+    "principalType": "automated-detector",
+    "principalId": "gpu-smi-node-4",
+    "displayName": "GPU Monitor @ node-4"
+  },
+  "tags": [
+    "thermal",
+    "overheat",
+    "hardware"
+  ]
+}

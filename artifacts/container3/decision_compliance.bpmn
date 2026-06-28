@@ -10,10 +10,10 @@
         <bpmn:flowNodeRef>Task_DecisionAgent</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Gateway_HighRiskCheck</bpmn:flowNodeRef>
       </bpmn:lane>
-      <bpmn:lane id="Lane_HITL" name="Fleet Review Board (Action Center)">
+      <bpmn:lane id="Lane_HITL" name="Researcher Review Board (Action Center)">
         <bpmn:flowNodeRef>Task_ActionCenterReview</bpmn:flowNodeRef>
       </bpmn:lane>
-      <bpmn:lane id="Lane_Execution" name="Downstream Automation / CMMS &amp; Audit">
+      <bpmn:lane id="Lane_Execution" name="Downstream Automation / Cloud APIs &amp; Audit">
         <bpmn:flowNodeRef>Task_LogComplianceAudit</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>EndEvent_ComplianceCompleted</bpmn:flowNodeRef>
       </bpmn:lane>
@@ -40,7 +40,7 @@
       <bpmn:outgoing>Flow_HITLCompleted</bpmn:outgoing>
     </bpmn:userTask>
     
-    <bpmn:serviceTask id="Task_LogComplianceAudit" name="Record Decision in CMMS &amp; Audit Log" uipath:taskType="CMMSIntegration">
+    <bpmn:serviceTask id="Task_LogComplianceAudit" name="Record Decision in Run Registry &amp; Audit Log" uipath:taskType="CMMSIntegration">
       <bpmn:incoming>Flow_HITLCompleted</bpmn:incoming>
       <bpmn:incoming>Flow_LowRiskRoute</bpmn:incoming>
       <bpmn:outgoing>Flow_To_End</bpmn:outgoing>

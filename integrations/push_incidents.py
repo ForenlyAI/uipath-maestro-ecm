@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Push the sample IncidentReports into a live Orchestrator queue.
+"""Push the sample IncidentReports (training-run anomalies) into a live Orchestrator queue.
 
-Each trigger is run through the Fleet AI Analyst, then enqueued with its triage
+Each trigger is run through the Telemetry Analyst, then enqueued with its triage
 (category / riskScore / confidence / hitlRequired / route) as SpecificContent.
 A Maestro/Studio process dequeues these and routes them — HITL items (high risk
 or low confidence) to the Action Center, the rest to autonomous Fast Track.
@@ -25,7 +25,7 @@ QUEUE = "IncidentReports"
 
 def main():
     orc = Orchestrator()
-    orc.ensure_queue(QUEUE, "Robotic lawn-mower fleet incidents — agentic HITL triage")
+    orc.ensure_queue(QUEUE, "Humanoid RL training-run anomalies — agentic HITL triage")
     triggers = sorted(p for p in glob.glob("samples/triggers/*.json") if "schema" not in p)
     for path in triggers:
         inc = json.load(open(path))
@@ -44,7 +44,7 @@ def main():
         )
         print(f"  + {inc['incidentId']} -> {content['category']} "
               f"risk={content['riskScore']} {content['route']} (item #{item.get('Id')})")
-    print(f"pushed {len(triggers)} incident(s) to queue '{QUEUE}'")
+    print(f"pushed {len(triggers)} anomaly event(s) to queue '{QUEUE}'")
 
 
 if __name__ == "__main__":
