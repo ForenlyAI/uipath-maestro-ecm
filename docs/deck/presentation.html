@@ -1,0 +1,178 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Training Fleet & Cloud Resource Manager — UiPath AgentHack 2026</title>
+<style>
+  :root{--ink:#0b1020;--bg:#0b1020;--card:#121a33;--accent:#fa4616;--accent2:#22d3ee;--muted:#9fb0d0;--line:#27325a;--white:#f4f7ff}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  @page{size:1280px 720px;margin:0}
+  body{background:#05070f}
+  .slide{position:relative;width:1280px;height:720px;background:radial-gradient(1200px 600px at 80% -10%,#16224a 0%,var(--bg) 55%);color:var(--white);
+        page-break-after:always;overflow:hidden;padding:70px 80px;display:flex;flex-direction:column}
+  .slide:last-child{page-break-after:auto}
+  .kicker{color:var(--accent);font-weight:800;letter-spacing:3px;font-size:15px;text-transform:uppercase}
+  h1{font-size:62px;line-height:1.05;margin:14px 0 10px;font-weight:850;letter-spacing:-1px}
+  h2{font-size:40px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+  .sub{color:var(--muted);font-size:22px;line-height:1.5;max-width:980px}
+  .big{font-size:26px;line-height:1.55}
+  ul{margin:18px 0 0 0;list-style:none}
+  li{font-size:23px;line-height:1.5;margin:14px 0;padding-left:34px;position:relative;color:#dde6fb}
+  li:before{content:"▸";position:absolute;left:0;color:var(--accent);font-weight:900}
+  li b{color:#fff}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:26px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px 26px}
+  .card h3{color:var(--accent2);font-size:20px;margin-bottom:8px;letter-spacing:.3px}
+  .card p{color:#cdd8f3;font-size:18px;line-height:1.45}
+  .pill{display:inline-block;background:#1b2750;border:1px solid var(--line);color:#cfe0ff;border-radius:999px;padding:7px 16px;margin:6px 8px 0 0;font-size:16px}
+  .foot{position:absolute;bottom:30px;left:80px;right:80px;display:flex;justify-content:space-between;color:#6f80a8;font-size:15px;border-top:1px solid var(--line);padding-top:14px}
+  .flow{display:flex;align-items:stretch;gap:0;margin-top:30px;flex-wrap:wrap}
+  .step{flex:1;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:6px;position:relative}
+  .step .n{color:var(--accent);font-weight:900;font-size:15px}
+  .step .t{font-size:17px;margin-top:6px;line-height:1.35;color:#e7eefc}
+  .num{display:flex;gap:40px;margin-top:34px}
+  .num div .v{font-size:50px;font-weight:900;color:var(--accent)}
+  .num div .l{color:var(--muted);font-size:18px;margin-top:2px}
+  .logo{font-weight:900;font-size:22px}.logo b{color:var(--accent)}
+  .accent{color:var(--accent)} .cy{color:var(--accent2)}
+  .center{justify-content:center}
+  code{background:#0c1density;color:#9becff}
+</style></head><body>
+
+<!-- 1 TITLE -->
+<section class="slide center">
+  <div class="kicker">UiPath AgentHack 2026 · Maestro BPMN Track</div>
+  <h1>Training Fleet &amp;<br><span class="accent">Cloud Resource Manager</span></h1>
+  <p class="big" style="max-width:1000px;margin-top:8px">An autonomous <b>cloud-GPU orchestrator</b> and <b>humanoid-RL training lifecycle manager</b> built end-to-end on UiPath Maestro BPMN — agentic decisions, human-approved cost &amp; safety gates.</p>
+  <div style="margin-top:34px">
+    <span class="pill">Agentic AI · Agent Builder</span><span class="pill">RPA · Cloud provisioning</span><span class="pill">Action Center HITL</span><span class="pill">Apache-2.0</span>
+  </div>
+  <div class="foot"><span class="logo">Forenly<b>.ai</b></span><span>github.com/ForenlyAI/uipath-maestro-ecm</span></div>
+</section>
+
+<!-- 2 PROBLEM -->
+<section class="slide">
+  <div class="kicker">The Problem</div>
+  <h2>Training humanoid robots burns cloud money — silently</h2>
+  <p class="sub">Reinforcement-learning skills (walking, grasping) for robots like the Unitree G1 are compute-heavy and expensive. Three failure modes quietly drain budgets:</p>
+  <ul>
+    <li><b>Idle GPU spend</b> — H100 / MI300X instances at $3–5+/hr left running before &amp; after training.</li>
+    <li><b>Silent divergence / collapse</b> — RL runs diverge or flatline for hours before anyone notices.</li>
+    <li><b>No audit &amp; provenance</b> — no record ties a finished checkpoint to its exact GPU cost, metrics, and approvals.</li>
+  </ul>
+  <p class="big" style="margin-top:26px;color:#fff">Managing async sim containers, live telemetry, and cloud budgets is a manual, error-prone operational headache.</p>
+  <div class="foot"><span>Training Fleet &amp; Cloud Resource Manager</span><span>02</span></div>
+</section>
+
+<!-- 3 SOLUTION -->
+<section class="slide">
+  <div class="kicker">The Solution</div>
+  <h2>Governance for ML infra — as a BPMN process</h2>
+  <p class="sub">A governed, agentic, human-in-the-loop orchestration on <b class="accent">UiPath Maestro BPMN</b> that runs the whole training lifecycle: AI agents do the analysis; humans approve the critical cost and physics-safety gates.</p>
+  <div class="grid">
+    <div class="card"><h3>Agentic AI</h3><p>UiPath <b>Agent Builder</b> agents classify each training anomaly, score risk, and decide <b>fast-track vs. human review</b>.</p></div>
+    <div class="card"><h3>RPA</h3><p>A UiPath <b>RPA Robot</b> provisions cost-optimal GPUs (AWS/GCP/AMD), SSH-kills bad runs, and writes to cloud consoles with no clean API.</p></div>
+    <div class="card"><h3>Action Center (HITL)</h3><p>Researchers approve checkpoints &amp; high-cost actions on rich, read-only AI context.</p></div>
+    <div class="card"><h3>Active cost containment</h3><p>Diverging runs are terminated instantly — saving thousands in wasted GPU hours.</p></div>
+  </div>
+  <div class="foot"><span>Training Fleet &amp; Cloud Resource Manager</span><span>03</span></div>
+</section>
+
+<!-- 4 HOW IT WORKS -->
+<section class="slide">
+  <div class="kicker">How it works</div>
+  <h2>From training request to audited checkpoint</h2>
+  <div class="flow">
+    <div class="step"><div class="n">1 · INGEST</div><div class="t">Researcher requests a skill (e.g. walk-gait-v2) via a form / GitHub.</div></div>
+    <div class="step"><div class="n">2 · BROKER</div><div class="t">RPA finds the cheapest available GPU across AWS / GCP / AMD.</div></div>
+    <div class="step"><div class="n">3 · DEPLOY</div><div class="t">SSH-launches the MuJoCo RL container on the chosen instance.</div></div>
+    <div class="step"><div class="n">4 · MONITOR</div><div class="t">AI agent watches reward/loss; on collapse → instant SSH shutdown + alert.</div></div>
+    <div class="step"><div class="n">5 · HITL</div><div class="t">Healthy run → Action Center card; researcher approves the checkpoint.</div></div>
+    <div class="step"><div class="n">6 · AUDIT</div><div class="t">Register weights, tear down GPU, log immutable cost &amp; approval trail.</div></div>
+  </div>
+  <p class="big" style="margin-top:34px">An <b class="accent">agentic Fast-Track gateway</b> auto-resolves low-risk anomalies (e.g. release an idle instance); high-risk / production-bound ones escalate to a human.</p>
+  <div class="foot"><span>Training Fleet &amp; Cloud Resource Manager</span><span>04</span></div>
+</section>
+
+<!-- 5 ARCHITECTURE -->
+<section class="slide">
+  <div class="kicker">Architecture</div>
+  <h2>UiPath-core, vendor-agnostic orchestration</h2>
+  <p class="sub"><b>3 processes · 8 BPMN containers · 9 swimlane roles.</b> Cloud providers, telemetry sources, LLMs and registries are swappable task nodes invoked by the BPMN flow.</p>
+  <div class="grid">
+    <div class="card"><h3>Anomaly taxonomy</h3><p>GRADIENT_COLLAPSE · LOSS_DIVERGENCE · HARDWARE_FAULT · RESOURCE_RISK</p></div>
+    <div class="card"><h3>Risk → routing</h3><p>severity + detector confidence × criticality zone (high-cost-gpu / production-bound / long-running) → HITL or Fast-Track</p></div>
+    <div class="card"><h3>Agents</h3><p>Telemetry Analyst · Anomaly Risk · Cost &amp; Impact · Compliance-summary</p></div>
+    <div class="card"><h3>Execution</h3><p>RPA → cloud console · billing dashboard · model registry · SSH container control</p></div>
+  </div>
+  <div class="foot"><span>Training Fleet &amp; Cloud Resource Manager</span><span>05</span></div>
+</section>
+
+<!-- 6 COMPONENTS -->
+<section class="slide">
+  <div class="kicker">UiPath Components &amp; Agent Type</div>
+  <h2>Built on the full UiPath stack</h2>
+  <ul>
+    <li><b>UiPath Maestro (BPMN 2.0)</b> — the orchestration core (3 processes / 8 containers / 9 roles).</li>
+    <li><b>UiPath Agent Builder</b> — Telemetry Analyst, Anomaly Risk, Cost &amp; Impact, compliance-summary agents.</li>
+    <li><b>UiPath Action Center</b> — human-in-the-loop Researcher Review Board (registered action type + forms).</li>
+    <li><b>UiPath RPA Robot + API Workflows</b> — GPU provisioning &amp; cloud/registry write-back (QueueProcessor.xaml).</li>
+    <li><b>UiPath Orchestrator</b> — Queues (IncidentReports), Folders, Jobs, transaction status.</li>
+  </ul>
+  <div class="card" style="margin-top:24px"><h3>Agent Type — both</h3><p><b>Low-code:</b> UiPath Agent Builder agents orchestrated by Maestro. &nbsp; <b>Coded:</b> the same contracts implemented as deterministic, testable Python task nodes (Claude primary / Gemini fallback).</p></div>
+  <div class="foot"><span>Training Fleet &amp; Cloud Resource Manager</span><span>06</span></div>
+</section>
+
+<!-- 7 DEMO -->
+<section class="slide">
+  <div class="kicker">Live demo</div>
+  <h2>Agentic triage, running end-to-end</h2>
+  <p class="sub">8 training-run anomaly samples flow through the pipeline → analyst → risk gateway → action → immutable audit. Live on UiPath Orchestrator via the <code>IncidentReports</code> queue.</p>
+  <div class="num">
+    <div><div class="v">8</div><div class="l">anomaly events</div></div>
+    <div><div class="v">6</div><div class="l">→ HITL review board</div></div>
+    <div><div class="v">2</div><div class="l">→ autonomous fast-track</div></div>
+    <div><div class="v">100%</div><div class="l">audited &amp; tested</div></div>
+  </div>
+  <ul style="margin-top:30px">
+    <li><b>gradient_collapse / loss_divergence / gpu_oom</b> → high risk → escalated to researcher.</li>
+    <li><b>idle_spend</b> → low risk → auto-resolved (instance released) with zero human touch.</li>
+  </ul>
+  <div class="foot"><span>Training Fleet &amp; Cloud Resource Manager</span><span>07</span></div>
+</section>
+
+<!-- 8 IMPACT -->
+<section class="slide center">
+  <div class="kicker">Impact</div>
+  <h2>Enterprise control over high-cost ML infrastructure</h2>
+  <div class="grid" style="margin-top:30px">
+    <div class="card"><h3>Save thousands</h3><p>Active cost-containment loop terminates bad runs instantly and kills idle spend — up to ~60% of wasted cloud GPU hours.</p></div>
+    <div class="card"><h3>Trustworthy models</h3><p>HITL verifies AI-trained policies against physics constraints before they reach a physical robot.</p></div>
+    <div class="card"><h3>Audit &amp; provenance</h3><p>Every checkpoint is tied to its GPU cost, metrics, and human approval — immutable.</p></div>
+    <div class="card"><h3>Generic &amp; open</h3><p>Fully public, Apache-2.0, vendor-agnostic blueprint — usable by any robotics lab.</p></div>
+  </div>
+  <div class="foot"><span>Training Fleet &amp; Cloud Resource Manager</span><span>08</span></div>
+</section>
+
+<!-- 9 NEXT -->
+<section class="slide">
+  <div class="kicker">What's next</div>
+  <h2>Roadmap</h2>
+  <ul>
+    <li><b>Decentralized compute</b> — extend the GPU broker to Vast.ai / Akash for cheaper training.</li>
+    <li><b>Multi-agent co-training</b> — fleets of humanoids co-training in parallel sim instances (MARL).</li>
+    <li><b>Multi-framework orchestration</b> — generalize beyond robotics to any compute-heavy training workload.</li>
+    <li><b>Deeper UiPath</b> — full Maestro Cloud deployment + Action Center reward-curve visualizations.</li>
+  </ul>
+  <div class="foot"><span>Training Fleet &amp; Cloud Resource Manager</span><span>09</span></div>
+</section>
+
+<!-- 10 CLOSE -->
+<section class="slide center">
+  <div class="kicker">Thank you</div>
+  <h1>Let's make humanoid training<br><span class="accent">governed, cheap &amp; auditable.</span></h1>
+  <div style="margin-top:26px">
+    <span class="pill">github.com/ForenlyAI/uipath-maestro-ecm</span>
+    <span class="pill">Apache-2.0</span>
+    <span class="pill">Claude (primary) · Gemini (fallback)</span>
+  </div>
+  <div class="foot"><span class="logo">Forenly<b>.ai</b> · UiPath AgentHack 2026</span><span>10</span></div>
+</section>
+
+</body></html>
