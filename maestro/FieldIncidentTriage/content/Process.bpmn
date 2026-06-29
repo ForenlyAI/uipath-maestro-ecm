@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:uipath="http://uipath.org/schema/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="FieldIncidentTriage-diagram" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="forenly/uipath-maestro-ecm" exporterVersion="1.1">
+  <bpmn:process id="Process_FieldIncidentTriage" name="Field Incident Triage" isExecutable="true">
+    <bpmn:documentation>Humanoid RL training-fleet queue-driven anomaly triage. Dequeues a training-run event from the IncidentReports queue in the Shared folder, reads SpecificContent.hitlRequired and route, then branches to either the Compliance Review Board via Action Center (HITL) or the autonomous Fast Track, and sets the transaction status (Successful/Failed) at the end.</bpmn:documentation>
+    
+    <bpmn:extensionElements>
+      <uipath:variables version="v1">
+        <!-- Dequeued Transaction Queue Item structure -->
+        <uipath:input id="vQueueItem" name="QueueItem" type="jsonSchema" elementId="Event_start" default="{&#34;Reference&#34;:&#34;&#34;,&#34;SpecificContent&#34;:{&#34;incidentId&#34;:&#34;&#34;,&#34;hitlRequired&#34;:false,&#34;route&#34;:&#34;AUTONOMOUS&#34;,&#34;category&#34;:&#34;&#34;,&#34;riskScore&#34;:0.0,&#34;suggestedAction&#34;:&#34;&#34;}}"><![CDATA[{"type":"object","$schema":"http://json-schema.org/draft-07/schema#","properties":{"Reference":{"type":"string"},"SpecificContent":{"type":"object","properties":{"incidentId":{"type":"string"},"hitlRequired":{"type":"boolean"},"route":{"type":"string"},"category":{"type":"string"},"riskScore":{"type":"number"},"suggestedAction":{"type":"string"}}}}}]]></uipath:input>
+        <!-- Output Transaction Status -->
+        <uipath:inputOutput id="vTransactionStatus" name="TransactionStatus" type="jsonSchema" elementId="Event_start"><![CDATA[{"type":"string"}]]></uipath:inputOutput>
+        <!-- Action Center Task Object reference -->
+        <uipath:inputOutput id="vActionTaskId" name="ActionTaskId" type="jsonSchema" elementId="Event_start"><![CDATA[{"type":"string"}]]></uipath:inputOutput>
+      </uipath:variables>
+    </bpmn:extensionElements>
+
+    <!-- Start Event triggered when a new item is added to IncidentReports queue -->
+    <bpmn:startEvent id="Event_start" name="Queue Trigger (IncidentReports)">
+      <bpmn:extensionElements>
+        <uipath:entryPointId value="a1b2c3d4-0001-4a00-8000-000000000001" />
+        <uipath:mapping version="v1">
+          <uipath:type value="BPMN.Variables" version="v1" />
+          <uipath:output name="QueueItem" type="json" source="=vars.vQueueItem" var="vQueueItem" />
+        </uipath:mapping>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>edge_start-dequeue</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Dequeue Task (Get Transaction Item) -->
+    <bpmn:serviceTask id="Activity_dequeue" name="Get Transaction Item" uipath:taskType="GetTransactionItem">
+      <bpmn:documentation>Calls Get Transaction Item on the IncidentReports queue in the Shared folder. Captures SpecificContent.</bpmn:documentation>
+      <bpmn:incoming>edge_start-dequeue</bpmn:incoming>
+      <bpmn:outgoing>edge_dequeue-gateway</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Route evaluation gateway -->
+    <bpmn:exclusiveGateway id="Gateway_hitl" name="HITL Required? (hitlRequired OR route=ACTION_CENTER)" default="edge_gateway-autoresolve">
+      <bpmn:incoming>edge_dequeue-gateway</bpmn:incoming>
+      <bpmn:outgoing>edge_gateway-actioncenter</bpmn:outgoing>
+      <bpmn:outgoing>edge_gateway-autoresolve</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <!-- User Task (HITL branch): Action Center Compliance Review -->
+    <bpmn:userTask id="Activity_actioncenter" name="Compliance Review Board (Action Center)" uipath:taskTemplate="action_type_compliance_review.json">
+      <bpmn:documentation>Creates an Action Center action of type ComplianceReviewBoard. Researcher reviews the telemetry and anomaly risk, and makes a final decision.</bpmn:documentation>
+      <bpmn:incoming>edge_gateway-actioncenter</bpmn:incoming>
+      <bpmn:outgoing>edge_actioncenter-setsuccess</bpmn:outgoing>
+    </bpmn:userTask>
+
+    <!-- Service Task (Autonomous branch): Fast-Track Auto-Resolve -->
+    <bpmn:serviceTask id="Activity_autoresolve" name="Fast-Track Auto-Resolve" uipath:taskType="FastTrackDispatch">
+      <bpmn:documentation>Runs autonomous dispatch to resolve minor/low-risk incidents.</bpmn:documentation>
+      <bpmn:incoming>edge_gateway-autoresolve</bpmn:incoming>
+      <bpmn:outgoing>edge_autoresolve-setsuccess</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Set Transaction Status: Successful -->
+    <bpmn:serviceTask id="Activity_setsuccess" name="Set Transaction Status: Successful" uipath:taskType="SetTransactionStatus">
+      <bpmn:incoming>edge_actioncenter-setsuccess</bpmn:incoming>
+      <bpmn:incoming>edge_autoresolve-setsuccess</bpmn:incoming>
+      <bpmn:outgoing>edge_success-completed</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- End Event -->
+    <bpmn:endEvent id="Event_completed" name="Transaction Processed">
+      <bpmn:incoming>edge_success-completed</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <!-- Sequence Flows -->
+    <bpmn:sequenceFlow id="edge_start-dequeue" sourceRef="Event_start" targetRef="Activity_dequeue" />
+    <bpmn:sequenceFlow id="edge_dequeue-gateway" sourceRef="Activity_dequeue" targetRef="Gateway_hitl" />
+    
+    <bpmn:sequenceFlow id="edge_gateway-actioncenter" name="Yes (HITL)" sourceRef="Gateway_hitl" targetRef="Activity_actioncenter">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=vars.vQueueItem.SpecificContent.hitlRequired.Equals(true) OrElse vars.vQueueItem.SpecificContent.route.Equals("ACTION_CENTER")</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+    <bpmn:sequenceFlow id="edge_gateway-autoresolve" name="No (Auto)" sourceRef="Gateway_hitl" targetRef="Activity_autoresolve" />
+    
+    <bpmn:sequenceFlow id="edge_actioncenter-setsuccess" sourceRef="Activity_actioncenter" targetRef="Activity_setsuccess" />
+    <bpmn:sequenceFlow id="edge_autoresolve-setsuccess" sourceRef="Activity_autoresolve" targetRef="Activity_setsuccess" />
+    <bpmn:sequenceFlow id="edge_success-completed" sourceRef="Activity_setsuccess" targetRef="Event_completed" />
+  </bpmn:process>
+
+  <!-- Visual layout coordinates (bpmndi) for rendering -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_FieldIncidentTriage">
+      <!-- Start Event Shape -->
+      <bpmndi:BPMNShape id="S_Event_start" bpmnElement="Event_start">
+        <dc:Bounds x="152" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="125" y="245" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Dequeue Task Shape -->
+      <bpmndi:BPMNShape id="S_Activity_dequeue" bpmnElement="Activity_dequeue">
+        <dc:Bounds x="250" y="180" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Gateway Shape -->
+      <bpmndi:BPMNShape id="S_Gateway_hitl" bpmnElement="Gateway_hitl" isMarkerVisible="true">
+        <dc:Bounds x="450" y="195" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="430" y="252" width="90" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Action Center User Task Shape -->
+      <bpmndi:BPMNShape id="S_Activity_actioncenter" bpmnElement="Activity_actioncenter">
+        <dc:Bounds x="580" y="80" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Auto Resolve Service Task Shape -->
+      <bpmndi:BPMNShape id="S_Activity_autoresolve" bpmnElement="Activity_autoresolve">
+        <dc:Bounds x="580" y="300" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Set Transaction Status Task Shape -->
+      <bpmndi:BPMNShape id="S_Activity_setsuccess" bpmnElement="Activity_setsuccess">
+        <dc:Bounds x="830" y="180" width="180" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- End Event Shape -->
+      <bpmndi:BPMNShape id="S_Event_completed" bpmnElement="Event_completed">
+        <dc:Bounds x="1072" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1055" y="245" width="70" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+
+      <!-- Edges -->
+      <bpmndi:BPMNEdge id="E_start-dequeue" bpmnElement="edge_start-dequeue">
+        <di:waypoint x="188" y="220" />
+        <di:waypoint x="250" y="220" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="E_dequeue-gateway" bpmnElement="edge_dequeue-gateway">
+        <di:waypoint x="390" y="220" />
+        <di:waypoint x="450" y="220" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="E_gateway-actioncenter" bpmnElement="edge_gateway-actioncenter">
+        <di:waypoint x="475" y="195" />
+        <di:waypoint x="475" y="120" />
+        <di:waypoint x="580" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="495" y="130" width="53" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="E_gateway-autoresolve" bpmnElement="edge_gateway-autoresolve">
+        <di:waypoint x="475" y="245" />
+        <di:waypoint x="475" y="340" />
+        <di:waypoint x="580" y="340" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="495" y="310" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="E_actioncenter-setsuccess" bpmnElement="edge_actioncenter-setsuccess">
+        <di:waypoint x="760" y="120" />
+        <di:waypoint x="800" y="120" />
+        <di:waypoint x="800" y="200" />
+        <di:waypoint x="830" y="200" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="E_autoresolve-setsuccess" bpmnElement="edge_autoresolve-setsuccess">
+        <di:waypoint x="760" y="340" />
+        <di:waypoint x="800" y="340" />
+        <di:waypoint x="800" y="240" />
+        <di:waypoint x="830" y="240" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="E_success-completed" bpmnElement="edge_success-completed">
+        <di:waypoint x="1010" y="220" />
+        <di:waypoint x="1072" y="220" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

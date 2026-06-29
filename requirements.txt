@@ -12,3 +12,6 @@ pydantic>=2.6.0
 
 # Tests
 pytest>=8.0.0
+
+# SSE
+sse-starlette>=2.0.0
