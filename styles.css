@@ -60,6 +60,9 @@ body {
   padding: 1rem 4rem;
   background: rgba(5,8,22,0.8);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transform: translateZ(0); /* Fixes Chrome black screen bug */
+  -webkit-transform: translateZ(0);
   border-bottom: 1px solid var(--border);
 }
 
